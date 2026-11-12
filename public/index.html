@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Подбор посудомоечных машин для дома в Ульяновске и области. Сравните типы техники и оставьте заявку на консультацию.">
+  <meta name="theme-color" content="#172a35">
+  <meta property="og:title" content="DOMA TECH — посудомоечные машины для вашего дома">
+  <meta property="og:description" content="Поможем подобрать посудомоечную машину под вашу кухню, потребности и бюджет.">
+  <title>Посудомоечные машины в Ульяновске — DOMA TECH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div class="demo-bar">Демонстрационная версия · ассортимент и условия магазина пока не подтверждены</div>
+  <header class="header">
+    <a class="brand" href="#" aria-label="DOMA TECH — главная"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a>
+    <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false">☰</button>
+    <nav class="nav" id="nav">
+      <a href="#catalog">Каталог</a><a href="#choose">Как выбрать</a><a href="#about">О магазине</a><a href="#faq">Вопросы</a>
+    </nav>
+    <a class="header-cta" href="#request">Подобрать технику <span>↗</span></a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> ПОСУДОМОЕЧНЫЕ МАШИНЫ · УЛЬЯНОВСК</div>
+        <h1>Чистая посуда.<br><em>Свободное время.</em></h1>
+        <p class="hero-lead">Поможем разобраться в характеристиках и подобрать посудомоечную машину под вашу кухню, потребности и бюджет.</p>
+        <div class="hero-actions"><a class="button button-gold" href="#catalog">Выбрать тип машины <span>→</span></a><a class="text-link" href="#request">Нужна помощь с выбором?</a></div>
+        <div class="hero-note"><span class="note-icon">✳</span><span>Подбор без сложных технических терминов</span></div>
+      </div>
+      <div class="hero-visual">
+        <div class="visual-glow"></div>
+        <div class="kitchen-label"><span>DOMA TECH / HOME</span><b>Комфорт начинается с деталей</b></div>
+        <div class="dishwasher-art" aria-label="Иллюстрация посудомоечной машины">
+          <div class="machine-top"></div><div class="machine-body"><div class="machine-panel"><i></i><i></i><i></i><span></span></div><div class="machine-door"><div class="door-handle"></div><div class="dish-rack"><b></b><b></b><b></b><b></b><b></b></div></div></div>
+          <div class="machine-shadow"></div>
+        </div>
+        <div class="floating-card"><span class="floating-icon">⌂</span><span><b>Под ваш интерьер</b><small>Размер и тип установки</small></span></div>
+      </div>
+    </section>
+
+    <section class="trust-strip">
+      <div><b>01</b><span>Подбор по параметрам</span></div><div><b>02</b><span>Понятное сравнение</span></div><div><b>03</b><span>Ориентир на ваш бюджет</span></div><div><b>04</b><span>Ульяновск и область</span></div>
+    </section>
+
+    <section class="section categories" id="catalog">
+      <div class="section-heading"><div><div class="eyebrow">КАТАЛОГ</div><h2>С чего начнём выбор?</h2></div><p>Выберите тип посудомоечной машины — дальше поможем уточнить параметры.</p></div>
+      <div class="category-grid">
+        <button class="category-card" data-category="built-in"><span class="category-num">01 / ВСТРАИВАЕМЫЕ</span><div class="appliance appliance-built"><i></i><b></b></div><strong>Встраиваемые</strong><small>Для кухонного гарнитура</small><span class="card-arrow">↗</span></button>
+        <button class="category-card" data-category="freestanding"><span class="category-num">02 / ОТДЕЛЬНОСТОЯЩИЕ</span><div class="appliance appliance-free"><i></i><b></b></div><strong>Отдельностоящие</strong><small>Самостоятельная установка</small><span class="card-arrow">↗</span></button>
+        <button class="category-card" data-category="slim"><span class="category-num">03 / УЗКИЕ</span><div class="appliance appliance-slim"><i></i><b></b></div><strong>Узкие</strong><small>Для компактной кухни</small><span class="card-arrow">↗</span></button>
+        <button class="category-card" data-category="compact"><span class="category-num">04 / КОМПАКТНЫЕ</span><div class="appliance appliance-compact"><i></i><b></b></div><strong>Компактные</strong><small>Когда важен каждый сантиметр</small><span class="card-arrow">↗</span></button>
+      </div>
+    </section>
+
+    <section class="section finder" id="choose">
+      <div class="finder-intro"><div class="eyebrow eyebrow-light">ПОДБОР ПО ПАРАМЕТРАМ</div><h2>Какая машина<br>подойдёт именно вам?</h2><p>Ответьте на несколько вопросов. Мы подготовим направление поиска — без случайного выбора.</p><div class="finder-stamp">YOUR<br><b>HOME</b><br>YOUR CHOICE</div></div>
+      <form class="finder-form" id="finderForm">
+        <label>Какой тип установки рассматриваете?<select name="type"><option value="Пока не определился">Пока не определился</option><option>Встраиваемая</option><option>Отдельностоящая</option><option>Компактная</option></select></label>
+        <label>Какая ширина подходит?<select name="width"><option value="Пока не знаю">Пока не знаю</option><option>Около 45 см</option><option>Около 60 см</option><option>Нужна компактная модель</option></select></label>
+        <label>Для кого выбираете?<select name="family"><option>Для одного-двух человек</option><option>Для семьи из 3–4 человек</option><option>Для большой семьи</option><option>Пока не определился</option></select></label>
+        <label>На какой бюджет ориентируетесь?<select name="budget"><option>Пока не определился</option><option>Экономичный</option><option>Средний</option><option>Премиальный</option></select></label>
+        <button class="button button-gold button-wide" type="submit">Получить направление подбора <span>→</span></button>
+        <p class="form-hint">Заявка будет отправлена в систему магазина. Не указывайте лишние персональные данные.</p>
+      </form>
+    </section>
+
+    <section class="section catalog-preview">
+      <div class="section-heading"><div><div class="eyebrow">ВИТРИНА</div><h2>Каталог скоро откроется</h2></div><p>Здесь появятся реальные модели, фотографии, цены и характеристики после выбора поставщиков.</p></div>
+      <div class="product-placeholder-grid" id="productGrid">
+        <article class="product-placeholder"><div class="product-visual"><div class="appliance appliance-built"><i></i><b></b></div><span>КАРТОЧКА ТОВАРА</span></div><div class="product-info"><small>ВСТРАИВАЕМАЯ</small><h3>Модель будет добавлена</h3><p>Фотография, характеристики и наличие уточняются.</p><b class="price">Цена уточняется</b></div></article>
+        <article class="product-placeholder"><div class="product-visual"><div class="appliance appliance-free"><i></i><b></b></div><span>КАРТОЧКА ТОВАРА</span></div><div class="product-info"><small>ОТДЕЛЬНОСТОЯЩАЯ</small><h3>Модель будет добавлена</h3><p>Фотография, характеристики и наличие уточняются.</p><b class="price">Цена уточняется</b></div></article>
+        <article class="product-placeholder"><div class="product-visual"><div class="appliance appliance-slim"><i></i><b></b></div><span>КАРТОЧКА ТОВАРА</span></div><div class="product-info"><small>УЗКАЯ</small><h3>Модель будет добавлена</h3><p>Фотография, характеристики и наличие уточняются.</p><b class="price">Цена уточняется</b></div></article>
+      </div>
+    </section>
+
+    <section class="section steps">
+      <div class="section-heading"><div><div class="eyebrow">ПРОСТОЙ ПУТЬ</div><h2>От вопроса до выбора</h2></div><p>Понятный процесс без необходимости самостоятельно изучать десятки сложных характеристик.</p></div>
+      <div class="steps-grid"><div><span>01</span><h3>Расскажите о кухне</h3><p>Тип установки, размеры и ваши пожелания.</p></div><div><span>02</span><h3>Сравните варианты</h3><p>Разберём важные характеристики простым языком.</p></div><div><span>03</span><h3>Выберите модель</h3><p>После появления ассортимента можно будет оформить заказ.</p></div></div>
+    </section>
+
+    <section class="section about" id="about"><div class="about-mark">D.</div><div><div class="eyebrow">DOMA TECH</div><h2>Техника должна упрощать жизнь</h2><p>Мы создаём магазин, в котором выбирать бытовую технику понятно и спокойно. Подбираем технику для покупателей в Ульяновске и области. Ассортимент и условия продажи уточняются.</p><a class="text-link" href="#request">Связаться по поводу подбора ↗</a></div></section>
+
+    <section class="section faq" id="faq"><div class="section-heading"><div><div class="eyebrow">FAQ</div><h2>Частые вопросы</h2></div><p>Основные моменты, которые стоит учесть перед покупкой.</p></div>
+      <details><summary>Как понять, какая ширина мне нужна?<span>+</span></summary><p>Измерьте свободное место в кухонном гарнитуре или зоне установки. Часто рассматривают модели около 45 и 60 см, но точные размеры нужно сверять с инструкцией конкретной модели.</p></details>
+      <details><summary>Что выбрать: встраиваемую или отдельностоящую?<span>+</span></summary><p>Встраиваемая модель интегрируется в кухонный гарнитур. Отдельностоящая имеет собственный корпус и обычно не требует мебельного фасада. Выбор зависит от планировки кухни.</p></details>
+      <details><summary>Есть ли уже товары в наличии?<span>+</span></summary><p>Ассортимент магазина формируется. Наличие и цены отображаются только после подтверждения поставщиков.</p></details>
+      <details><summary>Можно ли заказать доставку по Ульяновску?<span>+</span></summary><p>География проекта — Ульяновск и область. Конкретные сроки, стоимость и доступность доставки необходимо подтвердить до запуска продаж.</p></details>
+    </section>
+
+    <section class="request-section" id="request"><div><div class="eyebrow eyebrow-light">ОСТАЛИСЬ ВОПРОСЫ?</div><h2>Давайте подберём<br>технику для вашего дома</h2><p>Оставьте контакт и коротко опишите задачу. Сейчас форма работает в демонстрационном режиме.</p></div>
+      <form class="request-form" id="requestForm"><input name="website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true"><label>Ваше имя<input name="name" required placeholder="Как к вам обращаться"></label><label>Телефон или e-mail<input name="contact" required placeholder="+7 ___ ___-__-__ или e-mail"></label><label>Что ищете?<textarea name="message" rows="3" placeholder="Например, встраиваемую машину шириной около 45 см"></textarea></label><label class="consent"><input type="checkbox" required> Я согласен(на) на обработку данных для ответа на обращение.</label><button class="button button-gold button-wide" type="submit">Отправить заявку <span>→</span></button><small class="form-hint">До публикации подключите обработчик заявок и разместите полноценную политику обработки персональных данных.</small></form>
+    </section>
+  </main>
+  <footer class="footer"><a class="brand brand-footer" href="#"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><span>Демонстрационный проект · Ульяновск</span><a href="admin.html">Администрирование ↗</a><a href="#top">Наверх ↑</a></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
