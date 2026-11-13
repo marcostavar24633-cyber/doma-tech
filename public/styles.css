@@ -23,3 +23,20 @@ html{scroll-padding-top:18px}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* Market reference cards */
+.market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.market-card{min-width:0;background:#fff;border:1px solid #e8e6df;border-radius:10px;overflow:hidden}
+.market-visual{height:190px;background:linear-gradient(145deg,#e8e7e1,#f7f6f2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.market-visual>span{position:absolute;left:16px;top:15px;font-size:9px;font-weight:800;letter-spacing:.12em;color:#66747a}
+.market-visual .appliance{transform:scale(.9)}
+.market-info{padding:20px}
+.market-info>small{font-size:9px;font-weight:800;letter-spacing:.16em;color:#a87944}
+.market-info h3{font:800 20px Manrope,sans-serif;margin:7px 0 9px}
+.market-info p{min-height:42px;color:#66747a;font-size:12px;line-height:1.6}
+.market-info strong{display:block;margin:15px 0;color:#172a35;font:800 17px Manrope,sans-serif}
+.market-info a{display:inline-block;color:#8b6238;font-size:12px;font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.market-disclaimer{margin:18px 0 0;color:#78858a;font-size:11px;line-height:1.65}
+@media(max-width:900px){.market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.market-grid{grid-template-columns:1fr}.market-visual{height:170px}.market-info p{min-height:0}}
