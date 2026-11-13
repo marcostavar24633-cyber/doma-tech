@@ -31,7 +31,7 @@ document.querySelectorAll('.category-card').forEach(card=>card.addEventListener(
   if(typeSelect)typeSelect.value=({
     'built-in':'Встраиваемая',
     'freestanding':'Отдельностоящая',
-    'slim':'Встраиваемая',
+    'slim':'Пока не определился',
     'compact':'Компактная'
   })[type]||'Пока не определился';
   if(type==='slim'&&widthSelect)widthSelect.value='Около 45 см';
