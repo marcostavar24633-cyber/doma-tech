@@ -43,11 +43,13 @@ function verifyDatabase(filePath) {
     if (db.pragma('integrity_check', { simple: true }) !== 'ok') {
       throw new Error('SQLite integrity check failed.');
     }
-    for (const table of ['admins', 'products', 'orders', 'sessions']) {
+    for (const table of ['admins', 'products', 'orders', 'sessions', 'categories', 'site_settings']) {
       if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table)) {
         throw new Error(`Database is missing required table: ${table}`);
       }
     }
+    const foreignKeyViolations = db.pragma('foreign_key_check');
+    if (foreignKeyViolations.length) throw new Error(`SQLite foreign_key_check found ${foreignKeyViolations.length} violation(s)`);
   } finally {
     db.close();
   }
