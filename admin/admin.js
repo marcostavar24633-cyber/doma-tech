@@ -109,17 +109,25 @@
   productForm.addEventListener('submit', async (event) => {
     event.preventDefault(); $('#form-error').textContent = '';
     const form = new FormData(productForm); let image = String(form.get('image') || '').trim();
+    let newlyUploadedImage = '';
     try {
       const file = form.get('file');
       if (file && file.size) {
         const upload = new FormData(); upload.append('image', file);
-        const result = await api('/api/admin/upload', {method:'POST',body:upload}); image = result.url;
+        const result = await api('/api/admin/upload', {method:'POST',body:upload});
+        image = result.url; newlyUploadedImage = result.url;
       }
       const payload = {name:form.get('name'),category:form.get('category'),price:form.get('price'),description:form.get('description'),image,meta_title:form.get('meta_title'),meta_description:form.get('meta_description')};
       const id = form.get('id');
       await api(id ? '/api/admin/products/' + Number(id) : '/api/admin/products', {method:id?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      newlyUploadedImage = '';
       productDialog.close(); await loadAll(); notice(id ? 'Изменения сохранены' : 'Товар добавлен');
-    } catch (error) { $('#form-error').textContent = error.message; }
+    } catch (error) {
+      if (newlyUploadedImage) {
+        try { await api('/api/admin/upload/cleanup', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:newlyUploadedImage})}); } catch {}
+      }
+      $('#form-error').textContent = error.message;
+    }
   });
   $('#order-list').addEventListener('change', async (event) => {
     const select = event.target.closest('[data-order]'); if (!select) return;
