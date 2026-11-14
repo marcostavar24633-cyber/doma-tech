@@ -177,6 +177,21 @@ async function main() {
   const created = await createProduct.json();
   assert.ok(Number.isSafeInteger(created.id));
 
+  const hideProduct = await request('/api/admin/products/' + created.id + '/visibility', {
+    method: 'PATCH',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ active: false })
+  });
+  assert.equal(hideProduct.status, 200);
+  const hiddenPublicProduct = await request('/api/products');
+  assert.equal((await hiddenPublicProduct.json()).some(item => item.id === created.id), false);
+  const publishProduct = await request('/api/admin/products/' + created.id + '/visibility', {
+    method: 'PATCH',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ active: true })
+  });
+  assert.equal(publishProduct.status, 200);
+
   const listAdminProducts = await request('/api/admin/products', { headers: { cookie } });
   assert.equal(listAdminProducts.status, 200);
   assert.ok((await listAdminProducts.json()).some(item => item.id === created.id));
@@ -194,6 +209,20 @@ async function main() {
   });
   assert.equal(categoryCreate.status, 201);
   const category = await categoryCreate.json();
+  const hideCategory = await request('/api/admin/categories/' + category.id, {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1, active: false })
+  });
+  assert.equal(hideCategory.status, 200);
+  const hiddenConfig = await request('/api/site-config');
+  assert.equal((await hiddenConfig.json()).categories.some(item => item.id === category.id), false);
+  const publishCategory = await request('/api/admin/categories/' + category.id, {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1, active: true })
+  });
+  assert.equal(publishCategory.status, 200);
   const categoryList = await request('/api/admin/categories', { headers: { cookie } });
   assert.ok((await categoryList.json()).some(item => item.id === category.id));
   const categoryProduct = await request('/api/admin/products', {
@@ -246,7 +275,7 @@ async function main() {
   assert.equal(adminScript.status, 200);
   assert.match(await adminScript.text(), /x-csrf-token/);
 
-  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, category CRUD, site settings, public config, storefront integration, and admin interface.');
+  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, product/category visibility, category CRUD, site settings, public config, storefront integration, and admin interface.');
 }
 
 main()
