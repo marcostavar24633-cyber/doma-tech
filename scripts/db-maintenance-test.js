@@ -77,7 +77,34 @@ async function main() {
     assert.deepEqual(rcloneCalls.map(args => args[0]), ['copyto', 'check', 'copyto', 'check']);
     assert.ok(rcloneCalls.every(args => args.includes('--download') || args[0] === 'copyto'));
 
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation and offsite transfer verification.');
+    const remoteDir = path.join(temp, 'remote');
+    const restoredBackupDir = path.join(temp, 'downloaded-backups');
+    await fs.mkdir(remoteDir, { recursive: true });
+    await fs.mkdir(restoredBackupDir, { recursive: true });
+    await fs.copyFile(path.join(backupDir, validBackups[0]), path.join(remoteDir, validBackups[0]));
+    await fs.copyFile(path.join(backupDir, validBackups[0] + '.json'), path.join(remoteDir, validBackups[0] + '.json'));
+    const downloadMock = path.join(temp, 'mock-rclone-download.js');
+    await fs.writeFile(downloadMock, [
+      '#!/usr/bin/env node',
+      'const fs = require("node:fs");',
+      'const path = require("node:path");',
+      'const [command, source, target] = process.argv.slice(2);',
+      'if (command !== "copyto") process.exit(2);',
+      'const from = source.includes(":") ? path.join(process.env.RCLONE_TEST_REMOTE_DIR, path.basename(source)) : source;',
+      'const to = target.includes(":") ? path.join(process.env.RCLONE_TEST_REMOTE_DIR, path.basename(target)) : target;',
+      'fs.copyFileSync(from, to);'
+    ].join('\\n') + '\\n');
+    await fs.chmod(downloadMock, 0o755);
+    const downloadRun = spawnSync(process.execPath, [path.join(__dirname, 'offsite-restore-download.js'), validBackups[0]], {
+      env: { ...env, BACKUP_DIR: restoredBackupDir, OFFSITE_RCLONE_REMOTE: 'encrypted-test:doma-tech', RCLONE_BIN: downloadMock, RCLONE_TEST_REMOTE_DIR: remoteDir },
+      encoding: 'utf8'
+    });
+    assert.equal(downloadRun.status, 0, downloadRun.stderr || downloadRun.stdout);
+    const downloaded = path.join(restoredBackupDir, validBackups[0]);
+    assert.equal(await fs.readFile(downloaded).then(data => data.length), await fs.readFile(path.join(remoteDir, validBackups[0])).then(data => data.length));
+    assert.equal(JSON.parse(await fs.readFile(downloaded + '.json', 'utf8')).file, validBackups[0]);
+
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification and offsite download validation.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
