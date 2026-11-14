@@ -35,3 +35,15 @@ jobs:
 
       - name: Run server and database tests
         run: npm test
+
+      - name: Install Chromium and run desktop/mobile browser QA
+        run: npx --yes --package=playwright@1.55.0 -c 'playwright install --with-deps chromium && NODE_PATH="$(dirname "$(dirname "$(command -v playwright)")")" node scripts/browser-visual-qa.cjs'
+
+      - name: Upload desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doma-tech-browser-qa
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 7
