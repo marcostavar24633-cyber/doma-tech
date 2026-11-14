@@ -1,0 +1,11 @@
+[Unit]
+Description=Run DOMA TECH database backup every day
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=doma-tech-backup.service
+
+[Install]
+WantedBy=timers.target
