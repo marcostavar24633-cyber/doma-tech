@@ -74,7 +74,10 @@ async function main() {
 
     const mockRclone = path.join(temp, 'mock-rclone.js');
     const rcloneLog = path.join(temp, 'rclone-args.jsonl');
-    await fs.writeFile(mockRclone, '#!/usr/bin/env node\nrequire("node:fs").appendFileSync(process.env.RCLONE_TEST_LOG, JSON.stringify(process.argv.slice(2)) + "\n");\n');
+    await fs.writeFile(mockRclone, [
+      '#!/usr/bin/env node',
+      'require("node:fs").appendFileSync(process.env.RCLONE_TEST_LOG, JSON.stringify(process.argv.slice(2)) + String.fromCharCode(10));'
+    ].join(String.fromCharCode(10)) + String.fromCharCode(10));
     await fs.chmod(mockRclone, 0o755);
     const offsiteRun = spawnSync(process.execPath, [path.join(__dirname, 'offsite-backup.js'), validBackups[0]], {
       env: { ...env, OFFSITE_RCLONE_REMOTE: 'encrypted-test:doma-tech', RCLONE_BIN: mockRclone, RCLONE_TEST_LOG: rcloneLog },
