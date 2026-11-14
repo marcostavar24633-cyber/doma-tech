@@ -277,6 +277,11 @@ app.get('/', (req,res,next) => {
     const escapeAttr = value => String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeAttr(settings.meta_title || settings.site_title || 'DOMA TECH') + '</title>');
     html = html.replace(/<meta name="description" content="[^"]*">/i, '<meta name="description" content="' + escapeAttr(settings.meta_description) + '">');
+    html = html.replace(/<meta property="og:title" content="[^"]*">/i, '<meta property="og:title" content="' + escapeAttr(settings.meta_title || settings.site_title) + '">');
+    html = html.replace(/<meta name="twitter:title" content="[^"]*">/i, '<meta name="twitter:title" content="' + escapeAttr(settings.meta_title || settings.site_title) + '">');
+    html = html.replace(/<meta property="og:description" content="[^"]*">/i, '<meta property="og:description" content="' + escapeAttr(settings.meta_description) + '">');
+    html = html.replace(/<meta name="twitter:description" content="[^"]*">/i, '<meta name="twitter:description" content="' + escapeAttr(settings.meta_description) + '">');
+    html = html.replace(/<meta property="og:site_name" content="[^"]*">/i, '<meta property="og:site_name" content="' + escapeAttr(settings.site_title) + '">');
     html = html.replace(/<meta name="robots" content="[^"]*">/i, '<meta name="robots" content="' + robots + '">');
     if (siteUrl) {
       html = html.replace(/<link rel="canonical" href="[^"]*">/i, '<link rel="canonical" href="' + escapeAttr(siteUrl + '/') + '">');
@@ -385,7 +390,7 @@ app.get('/api/admin/settings', requireAdmin, (req,res) => {
 app.put('/api/admin/settings', requireAdmin, csrfCheck, (req,res) => {
   const allowed = Object.keys(DEFAULT_SITE_SETTINGS);
   const values = {};
-  for (const key of allowed) values[key] = cleanText(req.body[key], key.includes('description') || key.includes('subtitle') ? 300 : 120);
+  for (const key of allowed) values[key] = cleanText(req.body[key], key.includes('description') || key.includes('subtitle') ? 300 : key === 'site_url' ? 200 : 120);
   if (!values.site_title || !values.hero_title || !values.meta_title) return res.status(400).json({error:'Заполните название сайта, заголовок первого экрана и SEO title'});
   if (!['true','false'].includes(values.robots_index)) return res.status(400).json({error:'Выберите режим индексации'});
   if (values.site_url) {
