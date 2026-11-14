@@ -259,8 +259,8 @@ app.get('/robots.txt', (req,res) => {
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
   const indexing = settings.robots_index === 'true' && Boolean(settings.site_url);
   res.type('text/plain').send(indexing
-    ? 'User-agent: *\\nAllow: /\\nDisallow: /admin\\nDisallow: /api/\\nSitemap: ' + settings.site_url + '/sitemap.xml\\n'
-    : 'User-agent: *\\nDisallow: /\\n');
+    ? 'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: ' + settings.site_url + '/sitemap.xml\n'
+    : 'User-agent: *\nDisallow: /\n');
 });
 app.get('/sitemap.xml', (req,res) => {
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
