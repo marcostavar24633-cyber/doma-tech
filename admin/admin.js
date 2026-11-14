@@ -43,7 +43,7 @@
   function renderCategories() {
     const root = $('#category-list');
     if (!state.categories.length) { root.innerHTML = '<p class="muted">Категорий пока нет.</p>'; return; }
-    root.innerHTML = state.categories.map((c) => '<article class="item category-item"><div class="category-symbol">#</div><div><h3>' + esc(c.name) + '</h3><p>' + esc(c.slug) + ' · порядок: ' + Number(c.sort_order) + (c.active ? '' : ' · скрыта') + '</p></div><div class="item-actions"><button class="small-btn" data-category-edit="' + Number(c.id) + '" type="button">Изменить</button><button class="small-btn" data-category-toggle="' + Number(c.id) + '" type="button">'+(c.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-category-delete="' + Number(c.id) + '" type="button">Удалить</button></div></article>').join('');
+    root.innerHTML = state.categories.map((c) => '<article class="item category-item"><div class="category-symbol">#</div><div><h3>' + esc(c.name) + '</h3><p>' + esc(c.slug) + ' · порядок: ' + Number(c.sort_order) + (c.description ? ' · ' + esc(c.description) : '') + (c.active ? '' : ' · скрыта') + '</p></div><div class="item-actions"><button class="small-btn" data-category-edit="' + Number(c.id) + '" type="button">Изменить</button><button class="small-btn" data-category-toggle="' + Number(c.id) + '" type="button">'+(c.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-category-delete="' + Number(c.id) + '" type="button">Удалить</button></div></article>').join('');
   }
   function fillSettings() {
     const form = $('#settings-form');
@@ -128,7 +128,7 @@
     event.preventDefault(); $('#category-error').textContent = '';
     const form = new FormData(event.currentTarget);
     try {
-      await api('/api/admin/categories', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:form.get('name'),slug:form.get('slug'),sort_order:Number(form.get('sort_order'))})});
+      await api('/api/admin/categories', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:form.get('name'),slug:form.get('slug'),sort_order:Number(form.get('sort_order')),description:form.get('description')})});
       event.currentTarget.reset(); event.currentTarget.elements.sort_order.value = '0';
       await loadAll(); notice('Категория добавлена');
     } catch (error) { $('#category-error').textContent = error.message; }
@@ -140,7 +140,7 @@
       const category = state.categories.find((item) => item.id === Number(toggle.dataset.categoryToggle));
       if (!category) return;
       try {
-        await api('/api/admin/categories/' + category.id, {method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name:category.name,slug:category.slug,sort_order:Number(category.sort_order),active:!Boolean(category.active)})});
+        await api('/api/admin/categories/' + category.id, {method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name:category.name,slug:category.slug,sort_order:Number(category.sort_order),description:category.description || '',active:!Boolean(category.active)})});
         await loadAll(); notice(category.active ? 'Категория скрыта' : 'Категория опубликована');
       } catch (error) { notice(error.message,true); }
     }
@@ -150,7 +150,8 @@
       const name = prompt('Название категории:', category.name); if (name === null) return;
       const slug = prompt('URL-идентификатор:', category.slug); if (slug === null) return;
       const order = prompt('Порядок отображения:', String(category.sort_order)); if (order === null) return;
-      try { await api('/api/admin/categories/' + category.id, {method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name,slug,sort_order:Number(order),active:Boolean(category.active)})}); await loadAll(); notice('Категория обновлена'); }
+      const description = prompt('SEO-описание категории:', category.description || ''); if (description === null) return;
+      try { await api('/api/admin/categories/' + category.id, {method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name,slug,sort_order:Number(order),description,active:Boolean(category.active)})}); await loadAll(); notice('Категория обновлена'); }
       catch (error) { notice(error.message,true); }
     }
     if (remove) {
