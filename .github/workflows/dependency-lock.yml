@@ -30,15 +30,12 @@ jobs:
       - name: Generate lockfile without running install scripts
         run: npm install --package-lock-only --ignore-scripts --no-audit
 
-      - name: Apply non-breaking dependency security updates
-        run: npm audit fix --package-lock-only --ignore-scripts
-
       - name: Commit lockfile
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
-          git commit -m "Update npm lockfile with security fixes" || echo "No lockfile changes"
+          git commit -m "Refresh reproducible npm dependency lockfile" || echo "No lockfile changes"
           git push
 
       - name: Audit locked dependencies
