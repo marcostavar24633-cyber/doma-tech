@@ -463,3 +463,14 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Navigation state and ambient layer corrections */
+.nav-group:not([open])>.nav-submenu{display:none}
+.nav-group[open]>summary span{display:inline-block;transform:rotate(45deg)}
+body:before{z-index:0}
+body>*{position:relative;z-index:1}
+.toast{z-index:120}
+@media(max-width:700px){
+ .header-cta{display:inline-flex;align-items:center}
+ .nav{z-index:110}
+}
