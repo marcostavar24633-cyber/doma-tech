@@ -1,0 +1,40 @@
+name: Browser visual QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/browser-visual-qa.cjs'
+      - '.github/workflows/browser-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Chromium and run browser QA
+        shell: bash
+        run: |
+          npx --yes --package=playwright@1.55.0 -c 'playwright install --with-deps chromium && NODE_PATH="$(dirname "$(dirname "$(command -v playwright)")")" node scripts/browser-visual-qa.cjs'
+
+      - name: Upload desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doma-tech-browser-qa
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 7
