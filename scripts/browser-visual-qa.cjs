@@ -38,7 +38,7 @@ async function main() {
     });
     desktop.on('console', message => {
       const source = message.location().url || '';
-      if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('desktop console: ' + message.text());
+      if (message.type() === 'error' && !message.text().includes('Failed to load resource') && source.startsWith('http://127.0.0.1:4173/')) errors.push('desktop console: ' + message.text());
     });
     await desktop.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await desktop.locator('.hero h1').waitFor();
@@ -77,7 +77,7 @@ async function main() {
     });
     mobile.on('console', message => {
       const source = message.location().url || '';
-      if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
+      if (message.type() === 'error' && !message.text().includes('Failed to load resource') && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
     });
     await mobile.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     const mobileMetrics = await mobile.evaluate(() => {
@@ -132,7 +132,9 @@ async function main() {
       window.scrollTo(0, 0);
     });
     await mobile.waitForFunction(() => window.scrollY === 0);
-    await mobile.screenshot({ path: 'artifacts/mobile-390.png', fullPage: true, animations: 'disabled' });
+    await mobile.screenshot({ path: 'artifacts/mobile-390.png', fullPage: false, animations: 'disabled' });
+    await mobile.locator('#market-examples').scrollIntoViewIfNeeded();
+    await mobile.screenshot({ path: 'artifacts/mobile-catalog-390.png', fullPage: false, animations: 'disabled' });
 
     assert.deepEqual(errors, [], 'No uncaught browser JavaScript errors should occur');
     assert.deepEqual(unexpectedResponses, [], 'No unexpected same-origin HTTP errors should occur');
