@@ -431,9 +431,18 @@ app.put('/api/admin/categories/:id', requireAdmin, csrfCheck, (req,res) => {
   const id = Number(req.params.id), name = cleanText(req.body.name,60), slug = slugify(req.body.slug || name), sortOrder = Number(req.body.sort_order || 0), description = cleanText(req.body.description,500);
   if (!Number.isSafeInteger(id) || id <= 0 || !name || !slug || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) return res.status(400).json({error:'Некорректные данные категории'});
   try {
-    const result = db.prepare('UPDATE categories SET name=?,slug=?,sort_order=?,description=?,active=? WHERE id=?').run(name,slug,sortOrder,description,req.body.active === false ? 0 : 1,id);
-    if (!result.changes) return res.status(404).json({error:'Категория не найдена'});
-    res.json(db.prepare('SELECT * FROM categories WHERE id=?').get(id));
+    const updateCategory = db.transaction(() => {
+      const current = db.prepare('SELECT name FROM categories WHERE id=?').get(id);
+      if (!current) return null;
+      if (current.name !== name) {
+        db.prepare('UPDATE products SET category=? WHERE category=?').run(name,current.name);
+      }
+      db.prepare('UPDATE categories SET name=?,slug=?,sort_order=?,description=?,active=? WHERE id=?').run(name,slug,sortOrder,description,req.body.active === false ? 0 : 1,id);
+      return db.prepare('SELECT * FROM categories WHERE id=?').get(id);
+    });
+    const updated = updateCategory();
+    if (!updated) return res.status(404).json({error:'Категория не найдена'});
+    res.json(updated);
   } catch (error) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({error:'Название или URL категории уже используется'});
     throw error;
