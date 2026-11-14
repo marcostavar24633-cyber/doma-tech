@@ -55,7 +55,7 @@
         <p id="category-error" class="error" role="alert"></p><div id="category-list" class="product-list"></div>
       </section>
       <section id="settings-panel" class="panel" hidden>
-        <div class="section-head"><div><h2>Основные настройки и SEO</h2><p class="muted">Сохраняются в базе сервера. Публичная страница подключается отдельно.</p></div></div>
+        <div class="section-head"><div><h2>Основные настройки и SEO</h2><p class="muted">Настройки применяются сервером к HTML, robots.txt и sitemap.xml.</p></div></div>
         <form id="settings-form" class="settings-form">
           <label>Название сайта<input name="site_title" required maxlength="120"></label>
           <label>Заголовок первого экрана<input name="hero_title" required maxlength="120"></label>
@@ -63,6 +63,9 @@
           <label>Текст основной кнопки<input name="hero_cta_text" maxlength="120"></label>
           <label>SEO Title<input name="meta_title" required maxlength="120"></label>
           <label>SEO Description<textarea name="meta_description" rows="3" maxlength="300"></textarea></label>
+          <label>Адрес сайта (HTTPS)<input name="site_url" type="url" maxlength="200" placeholder="https://example.ru"></label>
+          <label>Индексация поисковиками<select name="robots_index"><option value="false">Выключена — noindex</option><option value="true">Включена — index</option></select></label>
+          <p class="muted small">Включайте индексацию только после подключения основного домена, проверки содержимого и готовности сайта к публикации.</p>
           <p id="settings-error" class="error" role="alert"></p><button class="primary" type="submit">Сохранить настройки</button>
         </form>
       </section>
