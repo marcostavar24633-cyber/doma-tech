@@ -213,6 +213,7 @@ app.use(session({
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 8, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Слишком много попыток. Попробуйте позже.' } });
 const orderLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Слишком много заявок. Попробуйте позже.' } });
+const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Слишком много загрузок. Попробуйте позже.' } });
 
 // Prevent browsers and shared proxies from caching authenticated data or CSRF tokens.
 app.use('/api/admin', (req, res, next) => {
@@ -267,6 +268,7 @@ function validProduct(body) {
   const price = body.price === '' || body.price === null || body.price === undefined ? null : Number(body.price);
   if (!name || !category) return { error: 'Укажите название и категорию товара' };
   if (price !== null && (!Number.isSafeInteger(price) || price < 0 || price > 100000000)) return { error: 'Некорректная цена' };
+  if (image.startsWith('/uploads/') && !localUploadPath(image)) return { error: 'Некорректный путь локального изображения' };
   if (image && !image.startsWith('/uploads/') && !/^https:\/\/.+/i.test(image)) return { error: 'Изображение должно быть HTTPS-ссылкой или файлом из /uploads/' };
   return { value: { name, category, description, image, price, metaTitle, metaDescription } };
 }
@@ -571,7 +573,7 @@ async function hasValidImageSignature(filePath, mimeType) {
   }
 }
 
-app.post('/api/admin/upload', requireAdmin, csrfCheck, (req,res)=>{
+app.post('/api/admin/upload', requireAdmin, csrfCheck, uploadLimiter, (req,res)=>{
   upload.single('image')(req,res,err=>{
     if(err) return res.status(400).json({error:err.message});
     if(!req.file) return res.status(400).json({error:'Выберите изображение'});
@@ -611,7 +613,7 @@ app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
 // Unknown API paths must not fall through to the public single-page app.
 app.use('/api', (req, res) => res.status(404).json({ error: 'API-маршрут не найден' }));
 
-app.use('/uploads', express.static(UPLOAD_DIR, { maxAge:'7d', fallthrough:false }));
+app.use('/uploads', express.static(UPLOAD_DIR, { maxAge:'7d', immutable:true, fallthrough:false, dotfiles:'deny', index:false, redirect:false }));
 app.use(express.static(path.join(ROOT,'public')));
 app.use('/admin-assets', express.static(path.join(ROOT, 'admin'), { fallthrough: false, maxAge: '1h' }));
 app.get('/admin', (req,res)=>{
