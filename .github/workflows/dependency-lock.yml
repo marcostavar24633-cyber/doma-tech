@@ -6,6 +6,8 @@ on:
     paths:
       - "package.json"
       - ".github/workflows/dependency-lock.yml"
+      - "server.js"
+      - "Dockerfile"
   workflow_dispatch:
 
 permissions:
@@ -37,6 +39,9 @@ jobs:
           git add package-lock.json
           git commit -m "Refresh reproducible npm dependency lockfile" || echo "No lockfile changes"
           git push
+
+      - name: Check server JavaScript syntax
+        run: node --check server.js
 
       - name: Audit locked dependencies
         run: npm audit --audit-level=high
