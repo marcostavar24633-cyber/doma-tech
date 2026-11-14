@@ -125,3 +125,132 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
   });
   applyFilters();
 })();
+
+
+/* Подключение управляемых настроек и каталога на серверной версии.
+   На GitHub Pages API недоступен — статическая витрина продолжает работать как раньше. */
+(async () => {
+  try {
+    const response = await fetch('/api/site-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+    if (!response.ok) return;
+    const config = await response.json();
+    const settings = config.settings || {};
+    const setText = (selector, value) => {
+      const node = document.querySelector(selector);
+      if (node && typeof value === 'string' && value.trim()) node.textContent = value;
+    };
+    if (settings.meta_title) document.title = settings.meta_title;
+    if (settings.meta_description) {
+      let description = document.querySelector('meta[name="description"]');
+      if (description) description.content = settings.meta_description;
+      let ogDescription = document.querySelector('meta[property="og:description"]');
+      if (ogDescription) ogDescription.content = settings.meta_description;
+    }
+    if (settings.meta_title) {
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.content = settings.meta_title;
+    }
+    setText('.brand [data-site-title]', settings.site_title);
+    setText('.hero h1 [data-hero-title]', settings.hero_title);
+    setText('.hero-lead', settings.hero_subtitle);
+    setText('.hero-actions .button', settings.hero_cta_text);
+    if (Array.isArray(config.categories) && config.categories.length) {
+      const grid = document.querySelector('.category-grid');
+      if (grid) {
+        const fragment = document.createDocumentFragment();
+        config.categories.forEach((category, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'category-card';
+          button.dataset.category = category.slug;
+          const number = document.createElement('span');
+          number.className = 'category-num';
+          number.textContent = String(index + 1).padStart(2, '0') + ' / ' + category.name.toLocaleUpperCase('ru-RU');
+          const visual = document.createElement('span');
+          visual.className = 'appliance appliance-built';
+          visual.setAttribute('aria-hidden', 'true');
+          const title = document.createElement('strong');
+          title.textContent = category.name;
+          const hint = document.createElement('small');
+          hint.textContent = 'Перейти к подбору';
+          const arrow = document.createElement('span');
+          arrow.className = 'card-arrow';
+          arrow.textContent = '↗';
+          button.append(number, visual, title, hint, arrow);
+          button.addEventListener('click', () => {
+            const field = document.querySelector('#finderForm select[name="type"]');
+            if (field) {
+              let option = [...field.options].find(item => item.value === category.name);
+              if (!option) { option = document.createElement('option'); option.value = category.name; option.textContent = category.name; field.append(option); }
+              field.value = category.name;
+            }
+            scrollToTarget(document.querySelector('#choose'));
+            notify('Категория выбрана. Уточните параметры подбора.');
+          });
+          fragment.append(button);
+        });
+        grid.replaceChildren(fragment);
+      }
+    }
+    const productsResponse = await fetch('/api/products', { headers: { accept: 'application/json' }, cache: 'no-store' });
+    if (productsResponse.ok) {
+      const products = await productsResponse.json();
+      if (Array.isArray(products) && products.length) {
+        let section = document.querySelector('#managed-catalog');
+        if (!section) {
+          section = document.createElement('section');
+          section.id = 'managed-catalog';
+          section.className = 'section catalog-preview';
+          const existing = document.querySelector('#market-examples');
+          if (existing) existing.before(section);
+          else document.querySelector('main')?.append(section);
+        }
+        const heading = document.createElement('div');
+        heading.className = 'section-heading';
+        const titleWrap = document.createElement('div');
+        const eyebrow = document.createElement('div');
+        eyebrow.className = 'eyebrow';
+        eyebrow.textContent = 'КАТАЛОГ DOMA TECH';
+        const title = document.createElement('h2');
+        title.textContent = 'Товары каталога';
+        titleWrap.append(eyebrow, title);
+        const intro = document.createElement('p');
+        intro.textContent = 'Позиции, добавленные администратором. Наличие и условия уточняйте перед заказом.';
+        heading.append(titleWrap, intro);
+        const grid = document.createElement('div');
+        grid.className = 'market-grid managed-product-grid';
+        products.forEach(product => {
+          const card = document.createElement('article');
+          card.className = 'market-card managed-product-card';
+          const visual = document.createElement('div');
+          visual.className = 'market-visual';
+          if (product.image) {
+            const img = document.createElement('img');
+            img.className = 'market-photo';
+            img.src = product.image;
+            img.alt = product.name;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            visual.append(img);
+          }
+          const info = document.createElement('div');
+          info.className = 'market-info';
+          const category = document.createElement('small');
+          category.textContent = product.category;
+          const name = document.createElement('h3');
+          name.textContent = product.name;
+          const description = document.createElement('p');
+          description.textContent = product.description || 'Подробности уточняйте у консультанта.';
+          const price = document.createElement('strong');
+          price.textContent = product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽';
+          info.append(category, name, description, price);
+          card.append(visual, info);
+          grid.append(card);
+        });
+        section.replaceChildren(heading, grid);
+      }
+    }
+  } catch {
+    // Static GitHub Pages and offline previews keep their original content.
+  }
+})();
