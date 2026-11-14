@@ -14,10 +14,25 @@ async function main() {
   });
   const browser = await chromium.launch({ headless: true });
   const errors = [];
+  const waitForServer = async () => {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      try {
+        const response = await fetch('http://127.0.0.1:4173/');
+        if (response.ok) return;
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    throw new Error('Static preview server did not become ready');
+  };
 
   try {
+    await waitForServer();
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
     desktop.on('pageerror', error => errors.push('desktop pageerror: ' + error.message));
+    desktop.on('console', message => {
+      const source = message.location().url || '';
+      if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('desktop console: ' + message.text());
+    });
     await desktop.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     await desktop.locator('.hero h1').waitFor();
     assert.equal(await desktop.locator('h1').count(), 1, 'The landing page must have one primary H1');
@@ -43,6 +58,10 @@ async function main() {
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
     mobile.on('pageerror', error => errors.push('mobile pageerror: ' + error.message));
+    mobile.on('console', message => {
+      const source = message.location().url || '';
+      if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
+    });
     await mobile.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     const mobileOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     assert.equal(mobileOverflow, false, 'Mobile layout must not overflow horizontally');
