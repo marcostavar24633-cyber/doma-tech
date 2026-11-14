@@ -253,13 +253,13 @@ async function main() {
   const renderedHtml = await renderedHome.text();
   assert.ok(renderedHtml.includes('<title>Test SEO title</title>'));
   assert.match(renderedHtml, /name="robots" content="index,follow"/);
-  assert.match(renderedHtml, /rel="canonical" href="https:\\/\\/example\\.test\\/"/);
+  assert.ok(renderedHtml.includes('rel="canonical" href="https://example.test/"'));
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
-  assert.match(await sitemap.text(), /https:\\/\\/example\\.test\\//);
+  assert.ok((await sitemap.text()).includes('https://example.test/'));
   const robots = await request('/robots.txt');
   assert.equal(robots.status, 200);
-  assert.match(await robots.text(), /Sitemap: https:\\/\\/example\\.test\\/sitemap\\.xml/);
+  assert.ok((await robots.text()).includes('Sitemap: https://example.test/sitemap.xml'));
   const categoryDelete = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
