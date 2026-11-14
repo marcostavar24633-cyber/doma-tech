@@ -378,6 +378,14 @@ app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   if(!r.changes) return res.status(404).json({error:'Товар не найден'});
   res.json(db.prepare('SELECT * FROM products WHERE id=?').get(id));
 });
+app.patch('/api/admin/products/:id/visibility', requireAdmin, csrfCheck, (req,res)=>{
+  const id=Number(req.params.id);
+  if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
+  if(typeof req.body.active !== 'boolean') return res.status(400).json({error:'Укажите active: true или false'});
+  const result=db.prepare('UPDATE products SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(req.body.active ? 1 : 0,id);
+  if(!result.changes) return res.status(404).json({error:'Товар не найден'});
+  res.json({ok:true,active:Boolean(req.body.active)});
+});
 app.delete('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id);
   if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
