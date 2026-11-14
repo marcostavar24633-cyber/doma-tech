@@ -476,3 +476,12 @@ body>*{position:relative;z-index:1}
 }
 
 body.menu-open{overflow:hidden}
+
+/* Mobile comparison table: keep wide data inside a deliberate horizontal scroller */
+.comparison-block{min-width:0;max-width:100%}
+.comparison-scroll{display:block;width:100%;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+@media(max-width:700px){
+  .comparison-block{width:100%;min-width:0;max-width:100%;overflow:hidden}
+  .comparison-scroll{width:100%;min-width:0;max-width:100%;overflow-x:auto}
+  .comparison-table{min-width:720px}
+}
