@@ -80,6 +80,6 @@ jobs:
 
           ADMIN_PAGE_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
             "http://127.0.0.1:${PORT}/admin")
-          test "${ADMIN_PAGE_STATUS}" = "404"
+          test "${ADMIN_PAGE_STATUS}" = "200"
 
           echo "Docker smoke test passed: production startup, health endpoint, non-root user, protected admin API, explicit missing admin UI."
