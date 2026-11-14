@@ -255,6 +255,37 @@ const upload = multer({
   }
 });
 
+app.get('/robots.txt', (req,res) => {
+  const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
+  const indexing = settings.robots_index === 'true' && Boolean(settings.site_url);
+  res.type('text/plain').send(indexing
+    ? 'User-agent: *\\nAllow: /\\nDisallow: /admin\\nDisallow: /api/\\nSitemap: ' + settings.site_url + '/sitemap.xml\\n'
+    : 'User-agent: *\\nDisallow: /\\n');
+});
+app.get('/sitemap.xml', (req,res) => {
+  const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
+  if (settings.robots_index !== 'true' || !settings.site_url) return res.status(404).type('text/plain').send('Sitemap is disabled until indexing and site URL are configured.');
+  const lastmod = new Date().toISOString().slice(0,10);
+  res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + settings.site_url + '/</loc><lastmod>' + lastmod + '</lastmod></url></urlset>');
+});
+app.get('/', (req,res,next) => {
+  const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
+  fs.promises.readFile(path.join(ROOT,'public','index.html'),'utf8').then(html => {
+    const siteUrl = settings.site_url || '';
+    const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
+    const escapeAttr = value => String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeAttr(settings.meta_title || settings.site_title || 'DOMA TECH') + '</title>');
+    html = html.replace(/<meta name="description" content="[^"]*">/i, '<meta name="description" content="' + escapeAttr(settings.meta_description) + '">');
+    html = html.replace(/<meta name="robots" content="[^"]*">/i, '<meta name="robots" content="' + robots + '">');
+    if (siteUrl) {
+      html = html.replace(/<link rel="canonical" href="[^"]*">/i, '<link rel="canonical" href="' + escapeAttr(siteUrl + '/') + '">');
+      html = html.replace(/<meta property="og:url" content="[^"]*">/i, '<meta property="og:url" content="' + escapeAttr(siteUrl + '/') + '">');
+    }
+    res.set('Cache-Control','no-cache');
+    res.type('html').send(html);
+  }).catch(next);
+});
 app.get('/api/health', (req,res)=>res.json({ ok:true, service:'DOMA TECH' }));
 app.get('/api/products', (req,res)=>{
   const products = db.prepare('SELECT id,name,category,price,description,image FROM products WHERE active=1 ORDER BY created_at DESC').all();
@@ -296,7 +327,9 @@ const DEFAULT_SITE_SETTINGS = {
   hero_subtitle: 'Подберите посудомоечную машину под ваши задачи',
   hero_cta_text: 'Смотреть каталог',
   meta_title: 'DOMA TECH — посудомоечные машины',
-  meta_description: 'Подбор и сравнение посудомоечных машин'
+  meta_description: 'Подбор и сравнение посудомоечных машин',
+  site_url: '',
+  robots_index: 'false'
 };
 for (const [key, value] of Object.entries(DEFAULT_SITE_SETTINGS)) {
   db.prepare('INSERT OR IGNORE INTO site_settings(key,value) VALUES(?,?)').run(key, value);
@@ -354,6 +387,16 @@ app.put('/api/admin/settings', requireAdmin, csrfCheck, (req,res) => {
   const values = {};
   for (const key of allowed) values[key] = cleanText(req.body[key], key.includes('description') || key.includes('subtitle') ? 300 : 120);
   if (!values.site_title || !values.hero_title || !values.meta_title) return res.status(400).json({error:'Заполните название сайта, заголовок первого экрана и SEO title'});
+  if (!['true','false'].includes(values.robots_index)) return res.status(400).json({error:'Выберите режим индексации'});
+  if (values.site_url) {
+    try {
+      const url = new URL(values.site_url);
+      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('invalid');
+      values.site_url = url.origin;
+    } catch {
+      return res.status(400).json({error:'Адрес сайта должен быть корректным HTTPS URL без параметров'});
+    }
+  }
   const save = db.transaction(() => {
     for (const [key,value] of Object.entries(values)) db.prepare('INSERT INTO site_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP').run(key,value);
   });
