@@ -1,0 +1,42 @@
+name: Lock and audit server dependencies
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependency-lock-main
+  cancel-in-progress: false
+
+jobs:
+  lock-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Generate lockfile without running install scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+
+      - name: Commit lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "Add reproducible npm dependency lockfile" || echo "No lockfile changes"
+          git push
+
+      - name: Audit locked dependencies
+        run: npm audit --audit-level=high
