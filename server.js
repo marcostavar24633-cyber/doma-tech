@@ -238,7 +238,7 @@ function cleanText(value, max=500) {
 function localUploadPath(image) {
   if (typeof image !== 'string' || !image.startsWith('/uploads/')) return null;
   const filename = image.slice('/uploads/'.length);
-  if (!/^[a-f0-9]{32}\\.(?:jpg|png|webp|avif)$/i.test(filename)) return null;
+  if (!/^[a-f0-9]{32}\.(?:jpg|png|webp|avif)$/i.test(filename)) return null;
   const resolved = path.resolve(UPLOAD_DIR, filename);
   if (path.dirname(resolved) !== UPLOAD_DIR) return null;
   return resolved;
