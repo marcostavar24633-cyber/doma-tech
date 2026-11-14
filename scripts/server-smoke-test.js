@@ -65,6 +65,10 @@ async function main() {
   const unauthorized = await request('/api/admin/products');
   assert.equal(unauthorized.status, 401);
 
+  const unknownApi = await request('/api/route-that-does-not-exist');
+  assert.equal(unknownApi.status, 404);
+  assert.match(unknownApi.headers.get('content-type') || '', /application\\/json/);
+
   const login = await request('/api/admin/login', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -79,7 +83,15 @@ async function main() {
 
   const me = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(me.status, 200);
+  assert.equal(me.headers.get('cache-control'), 'no-store');
   assert.equal((await me.json()).authenticated, true);
+
+  const invalidProductId = await request('/api/admin/products/0', {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Invalid ID', category: 'Test', price: 100 })
+  });
+  assert.equal(invalidProductId.status, 400);
 
   const csrfFailure = await request('/api/admin/products', {
     method: 'POST',
