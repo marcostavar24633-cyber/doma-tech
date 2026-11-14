@@ -234,8 +234,9 @@ async function main() {
 
   const storefrontScript = await request('/script.js');
   assert.equal(storefrontScript.status, 200);
-  assert.match(await storefrontScript.text(), /api\/site-config/);
-  assert.match(await storefrontScript.text(), /api\/products/);
+  const storefrontSource = await storefrontScript.text();
+  assert.match(storefrontSource, /api\/site-config/);
+  assert.match(storefrontSource, /api\/products/);
 
   const adminPage = await request('/admin');
   assert.equal(adminPage.status, 200, 'Admin interface should be served');
