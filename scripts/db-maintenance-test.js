@@ -28,6 +28,8 @@ async function main() {
     CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
     CREATE TABLE orders (id INTEGER PRIMARY KEY, name TEXT);
     CREATE TABLE sessions (sid TEXT PRIMARY KEY, sess TEXT, expires_at INTEGER);
+    CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT);
+    CREATE TABLE site_settings (key TEXT PRIMARY KEY, value TEXT);
     INSERT INTO products(name) VALUES ('Before backup');
   `);
   db.close();
@@ -127,6 +129,8 @@ async function main() {
       CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
       CREATE TABLE orders (id INTEGER PRIMARY KEY, name TEXT);
       CREATE TABLE sessions (sid TEXT PRIMARY KEY, sess TEXT, expires_at INTEGER);
+    CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT);
+    CREATE TABLE site_settings (key TEXT PRIMARY KEY, value TEXT);
       INSERT INTO products(name) VALUES ('Divergent disaster state');
     `);
     disasterDb.close();
@@ -174,6 +178,8 @@ async function main() {
       CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
       CREATE TABLE orders (id INTEGER PRIMARY KEY, name TEXT);
       CREATE TABLE sessions (sid TEXT PRIMARY KEY, sess TEXT, expires_at INTEGER);
+    CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT);
+    CREATE TABLE site_settings (key TEXT PRIMARY KEY, value TEXT);
     `);
     cycleDb.close();
     const cycleRun = spawnSync(process.execPath, [path.join(__dirname, 'run-backup-cycle.js')], {
