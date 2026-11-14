@@ -5,9 +5,9 @@ on:
     branches: [main]
     paths:
       - 'server.js'
-      - 'public/admin.html'
-      - 'public/admin.css'
-      - 'public/admin.js'
+      - 'admin/index.html'
+      - 'admin/admin.css'
+      - 'admin/admin.js'
       - 'scripts/server-smoke-test.js'
       - 'package.json'
       - 'package-lock.json'
