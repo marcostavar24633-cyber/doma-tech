@@ -2,7 +2,7 @@
   "name": "doma-tech-store",
   "version": "1.0.0",
   "private": true,
-  "description": "DOMA TECH ecommerce starter with protected admin, SQLite catalog and orders",
+  "description": "DOMA TECH server starter with protected admin, SQLite catalog, orders and validated image uploads",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
