@@ -198,7 +198,9 @@ app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   res.json(db.prepare('SELECT * FROM products WHERE id=?').get(id));
 });
 app.delete('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
-  const r=db.prepare('DELETE FROM products WHERE id=?').run(Number(req.params.id));
+  const id=Number(req.params.id);
+  if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
+  const r=db.prepare('DELETE FROM products WHERE id=?').run(id);
   if(!r.changes) return res.status(404).json({error:'Товар не найден'});
   res.json({ok:true});
 });
@@ -251,9 +253,11 @@ app.get('/api/admin/orders', requireAdmin, (req,res)=>{
   res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
 });
 app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
+  const id=Number(req.params.id);
+  if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
   const status=cleanText(req.body.status,20);
   if(!['new','in_progress','completed','cancelled'].includes(status)) return res.status(400).json({error:'Некорректный статус'});
-  const r=db.prepare('UPDATE orders SET status=? WHERE id=?').run(status,Number(req.params.id));
+  const r=db.prepare('UPDATE orders SET status=? WHERE id=?').run(status,id);
   if(!r.changes) return res.status(404).json({error:'Заявка не найдена'});
   res.json({ok:true});
 });
