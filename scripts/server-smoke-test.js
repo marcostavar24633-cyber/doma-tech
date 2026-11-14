@@ -174,6 +174,13 @@ async function main() {
   });
   assert.equal(invalidCategoryProduct.status, 400, 'Products must reference an existing category');
 
+  const imageCategoryResponse = await request('/api/admin/categories', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Images', slug: 'images', sort_order: 0, description: 'Smoke test image category' })
+  });
+  assert.equal(imageCategoryResponse.status, 201, 'Image lifecycle test must create its category first');
+
   const tempRoot = await tempRootPromise;
   const uploadsDir = path.join(tempRoot, 'uploads');
   const uploadPng = async () => {
