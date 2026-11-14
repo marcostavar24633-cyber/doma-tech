@@ -154,6 +154,71 @@ async function main() {
   });
   assert.equal(oversizedUpload.status, 400, 'Upload must reject files larger than 5 MiB');
 
+  const tempRoot = await tempRootPromise;
+  const uploadsDir = path.join(tempRoot, 'uploads');
+  const uploadPng = async () => {
+    const form = new FormData();
+    form.append('image', new Blob([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])], { type: 'image/png' }), 'test.png');
+    const response = await request('/api/admin/upload', {
+      method: 'POST',
+      headers: { cookie, 'x-csrf-token': loginBody.csrfToken },
+      body: form
+    });
+    assert.equal(response.status, 201, 'Valid PNG signature should upload');
+    return (await response.json()).url;
+  };
+  const sharedImage = await uploadPng();
+  const sharedImagePath = path.join(uploadsDir, sharedImage.slice('/uploads/'.length));
+  assert.equal(await fs.access(sharedImagePath).then(() => true, () => false), true);
+  const imageProductOneResponse = await request('/api/admin/products', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Image lifecycle one', category: 'Images', image: sharedImage })
+  });
+  assert.equal(imageProductOneResponse.status, 201);
+  const imageProductOne = await imageProductOneResponse.json();
+  const imageProductTwoResponse = await request('/api/admin/products', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Image lifecycle two', category: 'Images', image: sharedImage })
+  });
+  assert.equal(imageProductTwoResponse.status, 201);
+  const imageProductTwo = await imageProductTwoResponse.json();
+  const deleteSharedFirst = await request('/api/admin/products/' + imageProductOne.id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(deleteSharedFirst.status, 200);
+  assert.equal(await fs.access(sharedImagePath).then(() => true, () => false), true, 'Shared image must remain while another product references it');
+  const replacementImage = await uploadPng();
+  const updateImageProduct = await request('/api/admin/products/' + imageProductTwo.id, {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Image lifecycle two', category: 'Images', image: replacementImage })
+  });
+  assert.equal(updateImageProduct.status, 200);
+  assert.equal(await fs.access(sharedImagePath).then(() => true, () => false), false, 'Replaced image should be removed after its last reference is gone');
+  const replacementImagePath = path.join(uploadsDir, replacementImage.slice('/uploads/'.length));
+  assert.equal(await fs.access(replacementImagePath).then(() => true, () => false), true);
+  const deleteLastImageProduct = await request('/api/admin/products/' + imageProductTwo.id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(deleteLastImageProduct.status, 200);
+  assert.equal(await fs.access(replacementImagePath).then(() => true, () => false), false, 'Deleting the last referencing product should remove its local image');
+  const abandonedImage = await uploadPng();
+  const cleanupAbandoned = await request('/api/admin/upload/cleanup', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ url: abandonedImage })
+  });
+  assert.equal(cleanupAbandoned.status, 200);
+  assert.equal((await cleanupAbandoned.json()).removed, true, 'Unreferenced upload should be removable after failed product save');
+  const unsafeCleanup = await request('/api/admin/upload/cleanup', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ url: '/uploads/../../server.js' })
+  });
+  assert.equal(unsafeCleanup.status, 400, 'Cleanup must reject paths outside the upload directory');
+
   const invalidProductId = await request('/api/admin/products/0', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
@@ -358,7 +423,7 @@ async function main() {
   assert.equal(adminScript.status, 200);
   assert.match(await adminScript.text(), /x-csrf-token/);
 
-  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, product/category visibility, category CRUD, site settings, public config, storefront integration, and admin interface.');
+  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, product image lifecycle cleanup, logout, product/category visibility, category CRUD, site settings, public config, storefront integration, and admin interface.');
 }
 
 main()
