@@ -242,12 +242,24 @@ async function main() {
   const settingsUpdate = await request('/api/admin/settings', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
-    body: JSON.stringify({ site_title:'DOMA TECH Test', hero_title:'Test headline', hero_subtitle:'Test subtitle', hero_cta_text:'Catalog', meta_title:'Test SEO title', meta_description:'Test SEO description' })
+    body: JSON.stringify({ site_title:'DOMA TECH Test', hero_title:'Test headline', hero_subtitle:'Test subtitle', hero_cta_text:'Catalog', meta_title:'Test SEO title', meta_description:'Test SEO description', site_url:'https://example.test', robots_index:'true' })
   });
   assert.equal(settingsUpdate.status, 200);
   const publicConfig = await request('/api/site-config');
   assert.equal(publicConfig.status, 200);
   assert.equal((await publicConfig.json()).settings.site_title, 'DOMA TECH Test');
+  const renderedHome = await request('/');
+  assert.equal(renderedHome.status, 200);
+  const renderedHtml = await renderedHome.text();
+  assert.match(renderedHtml, /<title>Test SEO title<\\/title>/);
+  assert.match(renderedHtml, /name="robots" content="index,follow"/);
+  assert.match(renderedHtml, /rel="canonical" href="https:\\/\\/example\\.test\\/"/);
+  const sitemap = await request('/sitemap.xml');
+  assert.equal(sitemap.status, 200);
+  assert.match(await sitemap.text(), /https:\\/\\/example\\.test\\//);
+  const robots = await request('/robots.txt');
+  assert.equal(robots.status, 200);
+  assert.match(await robots.text(), /Sitemap: https:\\/\\/example\\.test\\/sitemap\\.xml/);
   const categoryDelete = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
