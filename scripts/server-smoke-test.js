@@ -260,6 +260,24 @@ async function main() {
   const robots = await request('/robots.txt');
   assert.equal(robots.status, 200);
   assert.ok((await robots.text()).includes('Sitemap: https://example.test/sitemap.xml'));
+  assert.ok(renderedHtml.includes('property="og:title" content="Test SEO title"'));
+  assert.ok(renderedHtml.includes('name="twitter:description" content="Test SEO description"'));
+  const invalidSeoSettings = await request('/api/admin/settings', {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ site_title:'DOMA TECH Test', hero_title:'Test headline', meta_title:'Test SEO title', meta_description:'Test SEO description', site_url:'http://insecure.example', robots_index:'true' })
+  });
+  assert.equal(invalidSeoSettings.status, 400, 'SEO must reject non-HTTPS canonical URLs');
+  const disableIndexing = await request('/api/admin/settings', {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ site_title:'DOMA TECH Test', hero_title:'Test headline', hero_subtitle:'Test subtitle', hero_cta_text:'Catalog', meta_title:'Test SEO title', meta_description:'Test SEO description', site_url:'https://example.test', robots_index:'false' })
+  });
+  assert.equal(disableIndexing.status, 200);
+  const disabledSitemap = await request('/sitemap.xml');
+  assert.equal(disabledSitemap.status, 404);
+  const disabledRobots = await request('/robots.txt');
+  assert.match(await disabledRobots.text(), /Disallow: \\/);
   const categoryDelete = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
