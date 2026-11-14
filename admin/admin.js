@@ -32,7 +32,7 @@
   function renderProducts() {
     const root = $('#product-list');
     if (!state.products.length) { root.innerHTML = '<p class="muted">В каталоге пока нет товаров. Добавьте первую позицию.</p>'; return; }
-    root.innerHTML = state.products.map((p) => '<article class="item"><img class="thumb" src="' + esc(p.image || '/favicon.svg') + '" alt="" loading="lazy""><div><h3>' + esc(p.name) + '</h3><p>' + esc(p.category) + ' · ' + esc(money(p.price)) + (p.active ? '' : ' · скрыт') + '</p></div><div class="item-actions"><button class="small-btn" data-edit="' + Number(p.id) + '" type="button">Изменить</button><button class="small-btn" data-product-toggle="' + Number(p.id) + '" type="button">'+(p.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-delete="' + Number(p.id) + '" type="button">Удалить</button></div></article>').join('');
+    root.innerHTML = state.products.map((p) => '<article class="item"><img class="thumb" src="' + esc(p.image || '/favicon.svg') + '" alt="" loading="lazy"><div><h3>' + esc(p.name) + '</h3><p>' + esc(p.category) + ' · ' + esc(money(p.price)) + (p.active ? '' : ' · скрыт') + '</p></div><div class="item-actions"><button class="small-btn" data-edit="' + Number(p.id) + '" type="button">Изменить</button><button class="small-btn" data-product-toggle="' + Number(p.id) + '" type="button">'+(p.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-delete="' + Number(p.id) + '" type="button">Удалить</button></div></article>').join('');
   }
   function renderOrders() {
     const root = $('#order-list');
