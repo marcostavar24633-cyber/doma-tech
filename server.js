@@ -243,13 +243,14 @@ function localUploadPath(image) {
   if (path.dirname(resolved) !== UPLOAD_DIR) return null;
   return resolved;
 }
-async function removeUnusedLocalUpload(image) {
+function removeUnusedLocalUpload(image) {
   const filePath = localUploadPath(image);
   if (!filePath) return false;
   const referenced = db.prepare('SELECT COUNT(*) AS count FROM products WHERE image=?').get(image).count;
   if (referenced > 0) return false;
   try {
-    await fs.promises.unlink(filePath);
+    // Keep the reference check and unlink in one synchronous event-loop turn to avoid a new reference racing cleanup.
+    fs.unlinkSync(filePath);
     return true;
   } catch (error) {
     if (error.code !== 'ENOENT') console.error('Could not remove unused product image:', error);
