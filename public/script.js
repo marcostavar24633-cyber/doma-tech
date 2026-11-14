@@ -93,7 +93,8 @@ document.getElementById('downloadSelection')?.addEventListener('click',()=>{
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');
   link.href=url;link.download='doma-tech-profile.txt';
-  document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
+  document.body.append(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('toggle',()=>{
   const sign=item.querySelector('summary span');
