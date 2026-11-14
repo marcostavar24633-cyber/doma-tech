@@ -65,14 +65,14 @@ async function main() {
 
     const mockRclone = path.join(temp, 'mock-rclone.js');
     const rcloneLog = path.join(temp, 'rclone-args.jsonl');
-    await fs.writeFile(mockRclone, '#!/usr/bin/env node\\nrequire("node:fs").appendFileSync(process.env.RCLONE_TEST_LOG, JSON.stringify(process.argv.slice(2)) + "\\n");\\n');
+    await fs.writeFile(mockRclone, '#!/usr/bin/env node\nrequire("node:fs").appendFileSync(process.env.RCLONE_TEST_LOG, JSON.stringify(process.argv.slice(2)) + "\n");\n');
     await fs.chmod(mockRclone, 0o755);
     const offsiteRun = spawnSync(process.execPath, [path.join(__dirname, 'offsite-backup.js'), validBackups[0]], {
       env: { ...env, OFFSITE_RCLONE_REMOTE: 'encrypted-test:doma-tech', RCLONE_BIN: mockRclone, RCLONE_TEST_LOG: rcloneLog },
       encoding: 'utf8'
     });
     assert.equal(offsiteRun.status, 0, offsiteRun.stderr || offsiteRun.stdout);
-    const rcloneCalls = (await fs.readFile(rcloneLog, 'utf8')).trim().split('\\n').map(line => JSON.parse(line));
+    const rcloneCalls = (await fs.readFile(rcloneLog, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
     assert.equal(rcloneCalls.length, 4, 'Offsite flow must upload and read-back verify the database and manifest');
     assert.deepEqual(rcloneCalls.map(args => args[0]), ['copyto', 'check', 'copyto', 'check']);
     assert.ok(rcloneCalls.every(args => args.includes('--download') || args[0] === 'copyto'));
