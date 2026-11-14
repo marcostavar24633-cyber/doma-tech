@@ -196,10 +196,20 @@ async function main() {
   const category = await categoryCreate.json();
   const categoryList = await request('/api/admin/categories', { headers: { cookie } });
   assert.ok((await categoryList.json()).some(item => item.id === category.id));
+  const categoryProduct = await request('/api/admin/products', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Category-linked test item', category: 'Built-in', price: 100 })
+  });
+  assert.equal(categoryProduct.status, 201);
   const categoryDeleteBlocked = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(categoryDeleteBlocked.status, 409, 'Category in use by products must not be deleted');
+  const removeCategoryProduct = await request('/api/admin/products/' + (await categoryProduct.json()).id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(removeCategoryProduct.status, 200);
   const settingsUpdate = await request('/api/admin/settings', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
