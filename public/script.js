@@ -13,6 +13,27 @@ function scrollToTarget(target){
   target.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
 }
 
+// Graceful fallback for product photos hosted on external seller/manufacturer sites.
+const applyMarketImageFallback = image => {
+  const visual = image.closest('.market-visual');
+  if (!visual || visual.classList.contains('image-fallback')) return;
+  visual.classList.add('image-fallback');
+  image.hidden = true;
+  if (!visual.querySelector('.image-fallback-label')) {
+    const label = document.createElement('span');
+    label.className = 'image-fallback-label';
+    label.textContent = 'Фото временно недоступно';
+    visual.append(label);
+  }
+};
+document.addEventListener('error', event => {
+  const image = event.target;
+  if (image instanceof HTMLImageElement && image.classList.contains('market-photo')) applyMarketImageFallback(image);
+}, true);
+document.querySelectorAll('img.market-photo').forEach(image => {
+  if (image.complete && image.naturalWidth === 0) applyMarketImageFallback(image);
+});
+
 const menuButton=document.querySelector('.menu-toggle');
 const nav=document.querySelector('.nav');
 if(menuButton&&nav){
