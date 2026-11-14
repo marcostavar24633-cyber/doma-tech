@@ -8,6 +8,7 @@ on:
       - '.dockerignore'
       - 'docker-compose.yml'
       - 'server.js'
+      - 'deploy/DOCKER-DEPLOY.md'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docker-smoke-test.yml'
