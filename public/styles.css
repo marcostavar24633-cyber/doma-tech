@@ -199,3 +199,27 @@ html{scroll-padding-top:18px}
   .nav a{min-height:44px;display:flex;align-items:center}
   .header{gap:10px}
 }
+
+
+/* Mobile usability: sticky navigation, anchor offsets and iOS form sizing */
+@media(max-width:650px){
+  .header{
+    position:sticky;
+    top:0;
+    z-index:50;
+    padding-top:env(safe-area-inset-top,0px);
+    height:calc(72px + env(safe-area-inset-top,0px));
+  }
+  .nav{top:calc(72px + env(safe-area-inset-top,0px))}
+  html{scroll-padding-top:calc(88px + env(safe-area-inset-top,0px))}
+  .finder-form select,
+  .request-form input,
+  .request-form textarea,
+  .market-filters select{
+    font-size:16px;
+  }
+  .market-filters select{min-height:48px}
+  .finder-form select,
+  .request-form input{min-height:48px}
+  .request-form textarea{min-height:104px}
+}
