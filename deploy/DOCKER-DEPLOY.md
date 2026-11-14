@@ -99,6 +99,6 @@ If an update fails, stop the container and roll back to the previously verified 
 ## Important limitations
 
 - The public GitHub Pages site remains a static prototype; Docker does not deploy or connect it to this server.
-- The server scaffold has no completed admin web interface: `/admin` intentionally returns 404. API endpoints are not a substitute for a usable management UI.
+- The protected admin interface is served at `/admin`; it supports login, product CRUD, image uploads, and order status updates. Verify it on a private staging deployment before accepting real customer data.
 - Real production deployment, TLS reverse proxy, firewall, credentials, cloud backup, monitoring, and legal compliance are not configured by committing this guide.
 - Run this first on a disposable staging host. Do not accept live customer data until the complete application and security review are finished.
