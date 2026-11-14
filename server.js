@@ -186,6 +186,13 @@ app.use(session({
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 8, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Слишком много попыток. Попробуйте позже.' } });
 const orderLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Слишком много заявок. Попробуйте позже.' } });
 
+// Prevent browsers and shared proxies from caching authenticated data or CSRF tokens.
+app.use('/api/admin', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('Pragma', 'no-cache');
+  next();
+});
+
 function requireAdmin(req, res, next) {
   if (!req.session || !req.session.adminId) return res.status(401).json({ error: 'Требуется вход администратора' });
   next();
@@ -276,7 +283,7 @@ app.post('/api/admin/products', requireAdmin, csrfCheck, (req,res)=>{
   res.status(201).json(db.prepare('SELECT * FROM products WHERE id=?').get(r.lastInsertRowid));
 });
 app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
-  const id=Number(req.params.id); if(!Number.isInteger(id)) return res.status(400).json({error:'Некорректный ID'});
+  const id=Number(req.params.id); if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
   const checked=validProduct(req.body); if(checked.error) return res.status(400).json({error:checked.error});
   const p=checked.value;
   const r=db.prepare('UPDATE products SET name=?,category=?,price=?,description=?,image=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.name,p.category,p.price,p.description,p.image,id);
@@ -347,6 +354,9 @@ app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
   if(!r.changes) return res.status(404).json({error:'Заявка не найдена'});
   res.json({ok:true});
 });
+
+// Unknown API paths must not fall through to the public single-page app.
+app.use('/api', (req, res) => res.status(404).json({ error: 'API-маршрут не найден' }));
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge:'7d', fallthrough:false }));
 app.use(express.static(path.join(ROOT,'public')));
