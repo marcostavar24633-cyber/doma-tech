@@ -181,6 +181,13 @@ async function main() {
   });
   assert.equal(imageCategoryResponse.status, 201, 'Image lifecycle test must create its category first');
 
+  const builtInCategoryResponse = await request('/api/admin/categories', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1, description: 'Smoke test product category' })
+  });
+  assert.equal(builtInCategoryResponse.status, 201, 'Product smoke test must create its category first');
+
   const tempRoot = await tempRootPromise;
   const uploadsDir = path.join(tempRoot, 'uploads');
   const uploadPng = async () => {
