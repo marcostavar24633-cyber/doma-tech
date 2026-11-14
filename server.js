@@ -54,6 +54,19 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS site_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -272,6 +285,81 @@ app.post('/api/admin/login', loginLimiter, (req,res)=>{
 });
 app.get('/api/admin/me', requireAdmin, (req,res)=>res.json({ authenticated:true, username:req.session.username, csrfToken:req.session.csrfToken }));
 app.post('/api/admin/logout', requireAdmin, csrfCheck, (req,res)=>req.session.destroy(()=>res.json({ok:true})));
+
+function slugify(value) {
+  return cleanText(value, 60).toLowerCase()
+    .replace(/[^a-zа-яё0-9]+/giu, '-').replace(/^-|-$/g, '').slice(0, 80);
+}
+const DEFAULT_SITE_SETTINGS = {
+  site_title: 'DOMA TECH',
+  hero_title: 'Техника для вашего дома',
+  hero_subtitle: 'Подберите посудомоечную машину под ваши задачи',
+  hero_cta_text: 'Смотреть каталог',
+  meta_title: 'DOMA TECH — посудомоечные машины',
+  meta_description: 'Подбор и сравнение посудомоечных машин'
+};
+for (const [key, value] of Object.entries(DEFAULT_SITE_SETTINGS)) {
+  db.prepare('INSERT OR IGNORE INTO site_settings(key,value) VALUES(?,?)').run(key, value);
+}
+app.get('/api/site-config', (req,res) => {
+  const rows = db.prepare('SELECT key,value FROM site_settings').all();
+  const settings = Object.fromEntries(rows.map(row => [row.key, row.value]));
+  res.set('Cache-Control', 'no-store');
+  res.json({ settings, categories: db.prepare('SELECT id,name,slug,sort_order FROM categories WHERE active=1 ORDER BY sort_order,name').all() });
+});
+app.get('/api/admin/categories', requireAdmin, (req,res) => {
+  res.json(db.prepare('SELECT * FROM categories ORDER BY sort_order,name').all());
+});
+app.post('/api/admin/categories', requireAdmin, csrfCheck, (req,res) => {
+  const name = cleanText(req.body.name, 60);
+  const slug = slugify(req.body.slug || name);
+  const sortOrder = Number(req.body.sort_order || 0);
+  if (!name || !slug || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) return res.status(400).json({error:'Проверьте название, URL-идентификатор и порядок категории'});
+  try {
+    const result = db.prepare('INSERT INTO categories(name,slug,sort_order) VALUES(?,?,?)').run(name,slug,sortOrder);
+    res.status(201).json(db.prepare('SELECT * FROM categories WHERE id=?').get(result.lastInsertRowid));
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({error:'Категория с таким названием или URL уже существует'});
+    throw error;
+  }
+});
+app.put('/api/admin/categories/:id', requireAdmin, csrfCheck, (req,res) => {
+  const id = Number(req.params.id), name = cleanText(req.body.name,60), slug = slugify(req.body.slug || name), sortOrder = Number(req.body.sort_order || 0);
+  if (!Number.isSafeInteger(id) || id <= 0 || !name || !slug || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) return res.status(400).json({error:'Некорректные данные категории'});
+  try {
+    const result = db.prepare('UPDATE categories SET name=?,slug=?,sort_order=?,active=? WHERE id=?').run(name,slug,sortOrder,req.body.active === false ? 0 : 1,id);
+    if (!result.changes) return res.status(404).json({error:'Категория не найдена'});
+    res.json(db.prepare('SELECT * FROM categories WHERE id=?').get(id));
+  } catch (error) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({error:'Название или URL категории уже используется'});
+    throw error;
+  }
+});
+app.delete('/api/admin/categories/:id', requireAdmin, csrfCheck, (req,res) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
+  const category = db.prepare('SELECT name FROM categories WHERE id=?').get(id);
+  if (!category) return res.status(404).json({error:'Категория не найдена'});
+  const used = db.prepare('SELECT COUNT(*) AS count FROM products WHERE category=?').get(category.name).count;
+  if (used) return res.status(409).json({error:'Сначала перенесите товары из этой категории'});
+  db.prepare('DELETE FROM categories WHERE id=?').run(id);
+  res.json({ok:true});
+});
+app.get('/api/admin/settings', requireAdmin, (req,res) => {
+  const rows = db.prepare('SELECT key,value FROM site_settings').all();
+  res.json(Object.fromEntries(rows.map(row => [row.key,row.value])));
+});
+app.put('/api/admin/settings', requireAdmin, csrfCheck, (req,res) => {
+  const allowed = Object.keys(DEFAULT_SITE_SETTINGS);
+  const values = {};
+  for (const key of allowed) values[key] = cleanText(req.body[key], key.includes('description') || key.includes('subtitle') ? 300 : 120);
+  if (!values.site_title || !values.hero_title || !values.meta_title) return res.status(400).json({error:'Заполните название сайта, заголовок первого экрана и SEO title'});
+  const save = db.transaction(() => {
+    for (const [key,value] of Object.entries(values)) db.prepare('INSERT INTO site_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP').run(key,value);
+  });
+  save();
+  res.json(values);
+});
 
 app.get('/api/admin/products', requireAdmin, (req,res)=>{
   res.json(db.prepare('SELECT * FROM products ORDER BY created_at DESC').all());
