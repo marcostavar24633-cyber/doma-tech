@@ -61,7 +61,7 @@ async function main() {
     assert.notEqual(denied.status, 0, 'Restore must require explicit opt-in');
 
     // A tampered backup must be rejected before touching the live database or creating a safety copy.
-    const tamperedName = filename.replace('.sqlite', '-tampered.sqlite');
+    const tamperedName = filename.replace(/([a-f0-9]{8})\.sqlite$/, 'deadbeef.sqlite');
     const tamperedManifest = { ...JSON.parse(await fs.readFile(path.join(backupDir, filename + '.json'), 'utf8')), file: tamperedName };
     await fs.copyFile(path.join(backupDir, filename), path.join(backupDir, tamperedName));
     await fs.appendFile(path.join(backupDir, tamperedName), Buffer.from('tampered'));
