@@ -6,8 +6,17 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { buildMessage, notify } = require('./backup-notifier');
 
 async function main() {
+  const alertText = buildMessage({ status: 'critical', error: 'simulated failure', issues: ['Backup missing'] });
+  assert.match(alertText, /DOMA TECH/);
+  assert.match(alertText, /simulated failure/);
+  assert.match(alertText, /Backup missing/);
+  const noNotification = await notify({ status: 'critical' }, {});
+  assert.equal(noNotification.configured, false);
+  assert.equal(noNotification.delivered, 0);
+
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'doma-db-maintenance-'));
   const dataDir = path.join(temp, 'data');
   const backupDir = path.join(temp, 'backups');
@@ -143,7 +152,7 @@ async function main() {
     assert.equal(JSON.parse(staleHealthRun.stdout).status, 'critical');
 
 
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download validation and scheduled backup cycle.');
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download validation, scheduled backup cycle and notification formatting/no-config behavior.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
