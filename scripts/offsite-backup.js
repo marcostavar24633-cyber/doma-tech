@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const Database = require('better-sqlite3');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
@@ -70,9 +72,18 @@ async function main() {
     if (result.status !== 0) {
       throw new Error(`rclone copyto failed for ${path.basename(source)}: ${(result.stderr || result.stdout || 'unknown error').trim()}`);
     }
+    const verification = spawnSync(process.env.RCLONE_BIN || 'rclone', ['check', '--download', source, target], {
+      encoding: 'utf8',
+      timeout: 10 * 60 * 1000,
+      maxBuffer: 1024 * 1024
+    });
+    if (verification.error) throw verification.error;
+    if (verification.status !== 0) {
+      throw new Error(`Remote verification failed for ${path.basename(source)}: ${(verification.stderr || verification.stdout || 'unknown error').trim()}`);
+    }
   }
 
-  console.log(`Offsite copy uploaded: ${destination}`);
+  console.log(`Offsite copy uploaded and verified: ${destination}`);
   console.log('Both SQLite backup and SHA-256 manifest were transferred. Remote files were not deleted or pruned.');
 }
 
