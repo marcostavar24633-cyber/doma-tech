@@ -21,8 +21,8 @@ if (process.env.NODE_ENV === 'production') {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
     throw new Error('SESSION_SECRET must be at least 32 characters in production');
   }
-  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change-this-before-first-run') {
-    throw new Error('Set a strong ADMIN_PASSWORD before production');
+  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'change-this-before-first-run' || process.env.ADMIN_PASSWORD.length < 14 || process.env.ADMIN_PASSWORD === process.env.ADMIN_USERNAME) {
+    throw new Error('Set an ADMIN_PASSWORD of at least 14 characters that is not the username');
   }
   app.set('trust proxy', 1);
 }
@@ -409,7 +409,18 @@ app.post('/api/admin/login', loginLimiter, (req,res)=>{
   });
 });
 app.get('/api/admin/me', requireAdmin, (req,res)=>res.json({ authenticated:true, username:req.session.username, csrfToken:req.session.csrfToken }));
-app.post('/api/admin/logout', requireAdmin, csrfCheck, (req,res)=>req.session.destroy(()=>res.json({ok:true})));
+app.post('/api/admin/logout', requireAdmin, csrfCheck, (req,res)=>{
+  req.session.destroy(error=>{
+    if (error) return res.status(500).json({error:'Не удалось завершить сессию'});
+    res.clearCookie('doma.sid', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/'
+    });
+    res.json({ok:true});
+  });
+});
 
 function slugify(value) {
   return cleanText(value, 60).toLowerCase()
