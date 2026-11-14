@@ -45,6 +45,15 @@ async function main() {
     assert.equal(await desktop.locator('h1').count(), 1, 'The landing page must have one primary H1');
     assert.ok(await desktop.title().then(title => title.includes('DOMA TECH')), 'Page title must identify DOMA TECH');
 
+    await desktop.waitForFunction(() => [...document.images].every(image => image.complete), { timeout: 15000 }).catch(() => {});
+    const photoStates = await desktop.locator('img.market-photo').evaluateAll(images => images.map(image => ({
+      src: image.currentSrc,
+      loaded: image.naturalWidth > 0,
+      fallback: Boolean(image.closest('.market-visual')?.classList.contains('image-fallback'))
+    })));
+    assert.ok(photoStates.every(image => image.loaded || image.fallback), 'Unavailable product photos must show the designed fallback');
+    console.log('Product image states:', JSON.stringify(photoStates));
+
     const desktopOverflow = await desktop.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     assert.equal(desktopOverflow, false, 'Desktop layout must not overflow horizontally');
 
