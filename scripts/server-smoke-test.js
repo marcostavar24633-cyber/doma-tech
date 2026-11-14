@@ -3,32 +3,43 @@
 const { spawn } = require('node:child_process');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const os = require('node:os');
+const fs = require('node:fs/promises');
 const { setTimeout: delay } = require('node:timers/promises');
 
 const port = 3100 + Math.floor(Math.random() * 1000);
 const base = `http://127.0.0.1:${port}`;
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
+const tempRootPromise = fs.mkdtemp(path.join(os.tmpdir(), 'doma-tech-smoke-'));
+let server;
+async function startServer() {
+  const tempRoot = await tempRootPromise;
+  server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
   cwd: path.join(__dirname, '..'),
   env: {
     ...process.env,
     NODE_ENV: 'test',
     PORT: String(port),
+    DATA_DIR: path.join(tempRoot, 'data'),
+    UPLOAD_DIR: path.join(tempRoot, 'uploads'),
     SESSION_SECRET: 'smoke-test-session-secret-at-least-32-characters',
     ADMIN_USERNAME: 'smoke-admin',
     ADMIN_PASSWORD: 'smoke-test-password-not-for-production'
   },
-  stdio: ['ignore', 'pipe', 'pipe']
-});
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+  server.stdout.on('data', chunk => { output += chunk.toString(); });
+  server.stderr.on('data', chunk => { output += chunk.toString(); });
+  return server;
+}
 
 let output = '';
-server.stdout.on('data', chunk => { output += chunk.toString(); });
-server.stderr.on('data', chunk => { output += chunk.toString(); });
 
 async function request(url, options = {}) {
   return fetch(base + url, { ...options, signal: AbortSignal.timeout(5000) });
 }
 
 async function main() {
+  await startServer();
   let ready = false;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (server.exitCode !== null) throw new Error(`Server exited early:\n${output}`);
@@ -160,6 +171,12 @@ main()
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(() => {
-    server.kill('SIGTERM');
+  .finally(async () => {
+    if (server && server.exitCode === null) {
+      server.kill('SIGTERM');
+      await Promise.race([new Promise(resolve => server.once('exit', resolve)), delay(3000)]);
+      if (server.exitCode === null) server.kill('SIGKILL');
+    }
+    const tempRoot = await tempRootPromise;
+    await fs.rm(tempRoot, { recursive: true, force: true });
   });
