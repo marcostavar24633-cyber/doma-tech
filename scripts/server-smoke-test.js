@@ -257,6 +257,24 @@ async function main() {
   assert.ok(productHtml.includes('/product/' + relatedProductData.slug));
   const missingProductPage = await request('/product/not-a-real-product');
   assert.equal(missingProductPage.status, 404);
+
+  const renameCategory = await request('/api/admin/categories/' + category.id, {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Built-in premium', slug: 'built-in-premium', sort_order: 1, description: 'Renamed category', active: true })
+  });
+  assert.equal(renameCategory.status, 200);
+  const renamedProducts = await request('/api/products');
+  const renamedProductList = await renamedProducts.json();
+  assert.equal(renamedProductList.find(item => item.id === categoryProductData.id).category, 'Built-in premium');
+  assert.equal(renamedProductList.find(item => item.id === relatedProductData.id).category, 'Built-in premium');
+  const renamedCategoryPage = await request('/catalog/built-in-premium');
+  assert.equal(renamedCategoryPage.status, 200);
+  const renamedCategoryHtml = await renamedCategoryPage.text();
+  assert.ok(renamedCategoryHtml.includes('/product/' + categoryProductData.slug));
+  const renamedProductPage = await request('/product/' + categoryProductData.slug);
+  assert.equal(renamedProductPage.status, 200);
+  assert.ok((await renamedProductPage.text()).includes('/product/' + relatedProductData.slug));
   const categoryDeleteBlocked = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
