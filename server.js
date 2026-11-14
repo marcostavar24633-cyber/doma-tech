@@ -360,10 +360,11 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'API-маршрут 
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge:'7d', fallthrough:false }));
 app.use(express.static(path.join(ROOT,'public')));
+app.use('/admin-assets', express.static(path.join(ROOT, 'admin'), { fallthrough: false, maxAge: '1h' }));
 app.get('/admin', (req,res)=>{
   res.set('Cache-Control', 'no-store');
   res.set('Pragma', 'no-cache');
-  res.sendFile(path.join(ROOT, 'public', 'admin.html'));
+  res.sendFile(path.join(ROOT, 'admin', 'index.html'));
 });
 app.get('*', (req,res)=>res.sendFile(path.join(ROOT,'public','index.html')));
 app.use((err,req,res,next)=>{
