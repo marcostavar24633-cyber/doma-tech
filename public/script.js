@@ -210,6 +210,9 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
         products.forEach(product => {
           const card = document.createElement('article');
           card.className = 'market-card managed-product-card';
+          const productLink = document.createElement('a');
+          productLink.className = 'managed-product-link';
+          productLink.href = product.slug ? '/product/' + encodeURIComponent(product.slug) : '#catalog';
           const visual = document.createElement('div');
           visual.className = 'market-visual';
           if (product.image) {
@@ -232,7 +235,8 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           const price = document.createElement('strong');
           price.textContent = product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽';
           info.append(category, name, description, price);
-          card.append(visual, info);
+          productLink.append(visual, info);
+          card.append(productLink);
           grid.append(card);
         });
         section.replaceChildren(heading, grid);
