@@ -101,6 +101,19 @@ async function main() {
   const cookie = cookieHeader.match(/doma\.sid=[^;]+/)?.[0];
   assert.ok(cookie, 'Login must issue the session cookie');
 
+  const csrfMissing = await request('/api/admin/settings', {
+    method: 'PUT',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ site_title:'Should not save' })
+  });
+  assert.equal(csrfMissing.status, 403, 'State-changing admin requests must reject missing CSRF tokens');
+  const csrfInvalid = await request('/api/admin/settings', {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': 'invalid-token', 'content-type': 'application/json' },
+    body: JSON.stringify({ site_title:'Should not save' })
+  });
+  assert.equal(csrfInvalid.status, 403, 'State-changing admin requests must reject invalid CSRF tokens');
+
   const me = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(me.status, 200);
   assert.equal(me.headers.get('cache-control'), 'no-store');
@@ -432,6 +445,7 @@ async function main() {
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(logout.status, 200);
+  assert.match(logout.headers.get('set-cookie') || '', /doma\\.sid=;/, 'Logout must clear the session cookie');
   const afterLogout = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(afterLogout.status, 401);
 
