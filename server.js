@@ -320,7 +320,7 @@ app.get('/product/:slug', (req,res) => {
   const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
   const categoryLink = product.category_slug ? '<a href="/catalog/' + encodeURIComponent(product.category_slug) + '">' + esc(product.category_name) + '</a>' : esc(product.category);
   const imageUrl = product.image && (product.image.startsWith('/uploads/') || /^https:\/\//i.test(product.image)) ? product.image : '';
-  const schema = { '@context':'https://schema.org', '@type':'Product', name:product.name, description, ...(imageUrl ? { image: imageUrl.startsWith('http') ? imageUrl : siteUrl + imageUrl } : {}), brand:{'@type':'Brand',name:'DOMA TECH'} };
+  const schema = { '@context':'https://schema.org', '@type':'Product', name:product.name, description, ...(imageUrl ? { image: imageUrl.startsWith('http') ? imageUrl : siteUrl + imageUrl } : {}) };
   const html = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '"><meta name="robots" content="' + robots + '"><meta property="og:type" content="product"><meta property="og:site_name" content="' + esc(settings.site_title || 'DOMA TECH') + '"><meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' + (imageUrl ? '<meta property="og:image" content="' + esc(imageUrl.startsWith('http') ? imageUrl : siteUrl + imageUrl) + '">' : '') + (canonical ? '<link rel="canonical" href="' + esc(canonical) + '"><meta property="og:url" content="' + esc(canonical) + '">' : '') + '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g,'\\u003c') + '</script><link rel="stylesheet" href="/styles.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><a class="header-cta" href="/">На главную ↗</a></header><main><section class="section"><nav aria-label="Хлебные крошки"><a href="/">Главная</a> / ' + categoryLink + ' / ' + esc(product.name) + '</nav><div class="market-grid"><article class="market-card managed-product-card"><div class="market-visual">' + (imageUrl ? '<img class="market-photo" src="' + esc(imageUrl) + '" alt="' + esc(product.name) + '">' : '') + '</div><div class="market-info"><div class="eyebrow">DOMA TECH · ' + categoryLink + '</div><h1>' + esc(product.name) + '</h1><p>' + esc(product.description || 'Подробности уточняйте у консультанта.') + '</p><strong>' + (product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽') + '</strong><p><a class="button button-gold" href="/#request">Уточнить наличие и условия</a></p></div></article></div></section></main><footer class="footer"><a href="/">DOMA TECH</a></footer></body></html>';
   res.set('Cache-Control','no-cache');
   res.type('html').send(html);
@@ -351,7 +351,7 @@ app.get('/', (req,res,next) => {
 });
 app.get('/api/health', (req,res)=>res.json({ ok:true, service:'DOMA TECH' }));
 app.get('/api/products', (req,res)=>{
-  const products = db.prepare('SELECT id,name,category,price,description,image FROM products WHERE active=1 ORDER BY created_at DESC').all();
+  const products = db.prepare('SELECT id,name,category,price,description,image,slug FROM products WHERE active=1 ORDER BY created_at DESC').all();
   res.json(products);
 });
 app.post('/api/orders', orderLimiter, (req,res)=>{
