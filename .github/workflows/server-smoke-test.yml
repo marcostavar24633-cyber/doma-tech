@@ -9,6 +9,8 @@ on:
       - 'package-lock.json'
       - 'scripts/server-smoke-test.js'
       - 'scripts/backup-db.js'
+      - 'scripts/offsite-backup.js'
+      - 'scripts/offsite-backup.js'
       - 'scripts/restore-db.js'
       - 'scripts/db-maintenance-test.js'
       - '.github/workflows/server-smoke-test.yml'
