@@ -34,6 +34,13 @@ async function startServer() {
 
 let output = '';
 
+async function stopServer() {
+  if (!server || server.exitCode !== null) return;
+  server.kill('SIGTERM');
+  await Promise.race([new Promise(resolve => server.once('exit', resolve)), delay(3000)]);
+  if (server.exitCode === null) server.kill('SIGKILL');
+}
+
 async function request(url, options = {}) {
   return fetch(base + url, { ...options, signal: AbortSignal.timeout(5000) });
 }
@@ -72,6 +79,8 @@ async function main() {
     body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'CI only' })
   });
   assert.equal(order.status, 201, 'Valid demo order should be accepted by isolated test DB');
+  const orderBody = await order.json();
+  assert.ok(Number.isSafeInteger(orderBody.id));
 
   const unauthorized = await request('/api/admin/products');
   assert.equal(unauthorized.status, 401);
@@ -96,6 +105,32 @@ async function main() {
   assert.equal(me.status, 200);
   assert.equal(me.headers.get('cache-control'), 'no-store');
   assert.equal((await me.json()).authenticated, true);
+
+  // Session records must survive a server restart because they are stored in SQLite.
+  await stopServer();
+  await startServer();
+  let restarted = false;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      const response = await request('/api/health');
+      if (response.ok) { restarted = true; break; }
+    } catch {}
+    await delay(250);
+  }
+  assert.equal(restarted, true, `Server did not restart:\n${output}`);
+  const persistedSession = await request('/api/admin/me', { headers: { cookie } });
+  assert.equal(persistedSession.status, 200, 'Admin session must survive server restart');
+
+  const adminOrders = await request('/api/admin/orders', { headers: { cookie } });
+  assert.equal(adminOrders.status, 200);
+  assert.ok((await adminOrders.json()).some(item => item.id === orderBody.id));
+
+  const updateOrder = await request(`/api/admin/orders/${orderBody.id}`, {
+    method: 'PATCH',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ status: 'in_progress' })
+  });
+  assert.equal(updateOrder.status, 200);
 
   const invalidUpload = await request('/api/admin/upload', {
     method: 'POST',
@@ -172,11 +207,7 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    if (server && server.exitCode === null) {
-      server.kill('SIGTERM');
-      await Promise.race([new Promise(resolve => server.once('exit', resolve)), delay(3000)]);
-      if (server.exitCode === null) server.kill('SIGKILL');
-    }
+    await stopServer();
     const tempRoot = await tempRootPromise;
     await fs.rm(tempRoot, { recursive: true, force: true });
   });
