@@ -1,0 +1,84 @@
+name: Docker smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'docker-compose.yml'
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/docker-smoke-test.yml'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'docker-compose.yml'
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/docker-smoke-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --pull -t doma-tech:smoke .
+
+      - name: Run container and verify production health
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT=3187
+          docker run -d --name doma-tech-smoke \
+            -p "127.0.0.1:${PORT}:3000" \
+            -e NODE_ENV=production \
+            -e PORT=3000 \
+            -e SESSION_SECRET=ci-only-session-secret-at-least-32-characters-long \
+            -e ADMIN_USERNAME=ci-admin \
+            -e ADMIN_PASSWORD=ci-only-not-a-real-production-password \
+            doma-tech:smoke
+          cleanup() {
+            docker logs doma-tech-smoke || true
+            docker rm -f doma-tech-smoke >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          READY=0
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent "http://127.0.0.1:${PORT}/api/health" >/tmp/doma-health.json; then
+              READY=1
+              break
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' doma-tech-smoke)" != "true" ]; then
+              echo "Container exited before becoming healthy"
+              exit 1
+            fi
+            sleep 2
+          done
+          test "${READY}" = "1"
+          grep -q '"ok":true' /tmp/doma-health.json
+
+          APP_UID=$(docker exec doma-tech-smoke id -u)
+          test "${APP_UID}" != "0"
+
+          ADMIN_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://127.0.0.1:${PORT}/api/admin/products")
+          test "${ADMIN_STATUS}" = "401"
+
+          ADMIN_PAGE_STATUS=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://127.0.0.1:${PORT}/admin")
+          test "${ADMIN_PAGE_STATUS}" = "404"
+
+          echo "Docker smoke test passed: production startup, health endpoint, non-root user, protected admin API, explicit missing admin UI."
