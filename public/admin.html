@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#14232b">
+  <title>Панель управления — DOMA TECH</title>
+  <link rel="stylesheet" href="/admin.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <section id="login-view" class="login-wrap">
+      <form id="login-form" class="login-card">
+        <a class="brand" href="/" aria-label="DOMA TECH">DOMA <span>TECH</span></a>
+        <p class="eyebrow">ЗАКРЫТЫЙ ДОСТУП</p>
+        <h1>Панель управления</h1>
+        <p class="muted">Войдите, чтобы управлять каталогом и заявками.</p>
+        <label>Логин<input name="username" autocomplete="username" required maxlength="80"></label>
+        <label>Пароль<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="login-error" class="error" role="alert"></p>
+        <button class="primary full" type="submit">Войти в систему</button>
+        <a class="back-link" href="/">← Вернуться на сайт</a>
+      </form>
+    </section>
+
+    <section id="app-view" hidden>
+      <header class="topbar">
+        <a class="brand" href="/">DOMA <span>TECH</span></a>
+        <div class="top-actions"><span id="user-label" class="user-label"></span><button id="logout" class="quiet" type="button">Выйти</button></div>
+      </header>
+      <div class="heading">
+        <div><p class="eyebrow">УПРАВЛЕНИЕ МАГАЗИНОМ</p><h1>Рабочая панель</h1><p class="muted">Каталог и обращения клиентов в одном месте.</p></div>
+        <button id="refresh" class="quiet" type="button">↻ Обновить данные</button>
+      </div>
+      <nav class="tabs" aria-label="Разделы панели">
+        <button class="tab active" data-tab="products" type="button">Товары <span id="product-count">0</span></button>
+        <button class="tab" data-tab="orders" type="button">Заявки <span id="order-count">0</span></button>
+      </nav>
+      <p id="notice" class="notice" role="status" aria-live="polite"></p>
+      <section id="products-panel" class="panel">
+        <div class="section-head"><div><h2>Каталог товаров</h2><p class="muted">Изменения сохраняются в серверной базе данных.</p></div><button id="add-product" class="primary" type="button">＋ Добавить товар</button></div>
+        <div id="product-list" class="product-list"><p class="muted">Загрузка каталога…</p></div>
+      </section>
+      <section id="orders-panel" class="panel" hidden>
+        <div class="section-head"><div><h2>Заявки клиентов</h2><p class="muted">Контактные данные доступны только авторизованному администратору.</p></div></div>
+        <div id="order-list" class="order-list"><p class="muted">Загрузка заявок…</p></div>
+      </section>
+      <footer class="footnote">Защищённое соединение и серверная конфигурация должны быть настроены перед использованием с реальными клиентами.</footer>
+    </section>
+  </main>
+
+  <dialog id="product-dialog" class="dialog">
+    <form id="product-form" class="dialog-card">
+      <div class="dialog-head"><div><p class="eyebrow">КАРТОЧКА КАТАЛОГА</p><h2 id="dialog-title">Новый товар</h2></div><button id="close-dialog" class="icon-button" type="button" aria-label="Закрыть">×</button></div>
+      <input name="id" type="hidden">
+      <label>Название<input name="name" required maxlength="120"></label>
+      <div class="two-col"><label>Категория<input name="category" required maxlength="60" placeholder="Встраиваемая"></label><label>Цена, ₽<input name="price" type="number" min="0" max="100000000" step="1"></label></div>
+      <label>Описание<textarea name="description" rows="3" maxlength="700"></textarea></label>
+      <label>Ссылка на изображение<input name="image" maxlength="500" placeholder="https://… или /uploads/…"></label>
+      <label>Загрузить изображение<input name="file" type="file" accept="image/jpeg,image/png,image/webp,image/avif"></label>
+      <p class="muted small">JPG, PNG, WEBP или AVIF, до 5 МБ. Загрузка заменит ссылку выше.</p>
+      <p id="form-error" class="error" role="alert"></p>
+      <div class="dialog-actions"><button id="cancel-dialog" class="quiet" type="button">Отмена</button><button class="primary" type="submit">Сохранить товар</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
