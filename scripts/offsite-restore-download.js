@@ -89,7 +89,7 @@ async function main() {
     const localManifest = `${localFile}.json`;
     await fs.copyFile(tempFile, localFile, constants.COPYFILE_EXCL);
     installedFile = true;
-    await fs.copyFile(tempManifest, localManifest, fs.constants?.COPYFILE_EXCL);
+    await fs.copyFile(tempManifest, localManifest, constants.COPYFILE_EXCL);
     installedManifest = true;
 
     console.log(`Offsite backup downloaded and verified: ${localFile}`);
