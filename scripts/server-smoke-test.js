@@ -251,7 +251,7 @@ async function main() {
   const renderedHome = await request('/');
   assert.equal(renderedHome.status, 200);
   const renderedHtml = await renderedHome.text();
-  assert.match(renderedHtml, /<title>Test SEO title<\\/title>/);
+  assert.ok(renderedHtml.includes('<title>Test SEO title</title>'));
   assert.match(renderedHtml, /name="robots" content="index,follow"/);
   assert.match(renderedHtml, /rel="canonical" href="https:\\/\\/example\\.test\\/"/);
   const sitemap = await request('/sitemap.xml');
