@@ -321,7 +321,7 @@ app.get('/catalog/:slug', (req,res,next) => {
   const category = db.prepare('SELECT id,name,slug,description FROM categories WHERE slug=? AND active=1').get(req.params.slug);
   if (!category) return res.status(404).type('text/plain').send('Категория не найдена');
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
-  const products = db.prepare('SELECT id,name,price,description,image FROM products WHERE active=1 AND category=? ORDER BY created_at DESC').all(category.name);
+  const products = db.prepare('SELECT id,name,price,description,image,slug FROM products WHERE active=1 AND category=? ORDER BY created_at DESC').all(category.name);
   const siteUrl = settings.site_url || '';
   const canonical = siteUrl ? siteUrl + '/catalog/' + encodeURIComponent(category.slug) : '';
   const title = category.name + ' — каталог DOMA TECH';
