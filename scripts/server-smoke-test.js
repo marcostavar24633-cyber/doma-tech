@@ -174,6 +174,22 @@ async function main() {
   });
   assert.equal(invalidCategoryProduct.status, 400, 'Products must reference an existing category');
 
+  const imageCategoryResponse = await request('/api/admin/categories', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Images', slug: 'images', sort_order: 0, description: 'Smoke test image category' })
+  });
+  assert.equal(imageCategoryResponse.status, 201, 'Image lifecycle test must create its category first');
+
+  const builtInCategoryResponse = await request('/api/admin/categories', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1, description: 'Smoke test product category' })
+  });
+  assert.equal(builtInCategoryResponse.status, 201, 'Product smoke test must create its category first');
+
+  const builtInCategory = await builtInCategoryResponse.json();
+
   const tempRoot = await tempRootPromise;
   const uploadsDir = path.join(tempRoot, 'uploads');
   const uploadPng = async () => {
@@ -313,13 +329,7 @@ async function main() {
   });
   assert.equal(removeProduct.status, 200);
 
-  const categoryCreate = await request('/api/admin/categories', {
-    method: 'POST',
-    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1 })
-  });
-  assert.equal(categoryCreate.status, 201);
-  const category = await categoryCreate.json();
+  const category = builtInCategory;
   const hideCategory = await request('/api/admin/categories/' + category.id, {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
@@ -452,7 +462,7 @@ async function main() {
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(logout.status, 200);
-  assert.match(logout.headers.get('set-cookie') || '', /doma\\.sid=;/, 'Logout must clear the session cookie');
+  assert.match(logout.headers.get('set-cookie') || '', /doma\.sid=;/, 'Logout must clear the session cookie');
   const afterLogout = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(afterLogout.status, 401);
 

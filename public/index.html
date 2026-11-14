@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Сравнение посудомоечных машин: модели, ширина, тип установки и характеристики. Демонстрационный проект DOMA TECH для Ульяновска.">
+  <meta name="description" content="Понятный подбор посудомоечной машины для вашей кухни: сравнение типов установки, размеров и характеристик. Демонстрационный проект DOMA TECH.">
   <meta name="robots" content="noindex,follow">
-  <meta name="theme-color" content="#172a35">
+  <meta name="theme-color" content="#101b1c">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://marcostavar24633-cyber.github.io/doma-tech/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ru_RU">
   <meta property="og:site_name" content="DOMA TECH">
   <meta property="og:url" content="https://marcostavar24633-cyber.github.io/doma-tech/">
-  <meta property="og:title" content="DOMA TECH — посудомоечные машины: сравнение и выбор">
-  <meta property="og:description" content="Сравнение посудомоечных машин: модели, ширина, тип установки и характеристики. Демонстрационный проект DOMA TECH для Ульяновска.">
+  <meta property="og:title" content="DOMA TECH — техника для дома, выбранная с умом">
+  <meta property="og:description" content="Понятный подбор посудомоечной машины для вашей кухни: сравнение типов установки, размеров и характеристик. Демонстрационный проект DOMA TECH.">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="DOMA TECH — посудомоечные машины: сравнение и выбор">
-  <meta name="twitter:description" content="Сравнение посудомоечных машин: модели, ширина, тип установки и характеристики. Демонстрационный проект DOMA TECH для Ульяновска.">
-  <title>DOMA TECH — посудомоечные машины: сравнение и выбор</title>
+  <meta name="twitter:title" content="DOMA TECH — техника для дома, выбранная с умом">
+  <meta name="twitter:description" content="Понятный подбор посудомоечной машины для вашей кухни: сравнение типов установки, размеров и характеристик. Демонстрационный проект DOMA TECH.">
+  <title>DOMA TECH — техника для дома, выбранная с умом</title>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -34,8 +34,8 @@
         "@type": "WebPage",
         "@id": "https://marcostavar24633-cyber.github.io/doma-tech/#webpage",
         "url": "https://marcostavar24633-cyber.github.io/doma-tech/",
-        "name": "DOMA TECH — посудомоечные машины: сравнение и выбор",
-        "description": "Сравнение типов установки и характеристик посудомоечных машин. Демонстрационный проект.",
+        "name": "DOMA TECH — техника для дома, выбранная с умом",
+        "description": "Понятный подбор посудомоечной машины для вашей кухни. Демонстрационный проект.",
         "inLanguage": "ru-RU",
         "isPartOf": {"@id": "https://marcostavar24633-cyber.github.io/doma-tech/#website"}
       },
@@ -81,8 +81,11 @@
   <header class="header">
     <a class="brand" href="#" aria-label="DOMA TECH — главная"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a>
     <button class="menu-toggle" type="button" aria-label="Открыть меню" aria-controls="nav" aria-expanded="false">☰</button>
-    <nav class="nav" id="nav">
-      <a href="#catalog">Каталог</a><a href="#choose">Как выбрать</a><a href="#about">О проекте</a><a href="#faq">Вопросы</a>
+    <nav class="nav" id="nav" aria-label="Основная навигация">
+      <a class="nav-home" href="#top">Главная</a>
+      <details class="nav-group"><summary>Каталог <span>＋</span></summary><div class="nav-submenu"><a href="#catalog">Все категории</a><a href="#market-examples">Модели и сравнение</a><a href="#choose">Подобрать по параметрам</a></div></details>
+      <details class="nav-group"><summary>Помощь с выбором <span>＋</span></summary><div class="nav-submenu"><a href="#choose">Подбор за минуту</a><a href="#faq">Ответы на вопросы</a></div></details>
+      <a href="#about">О проекте</a>
     </nav>
     <a class="header-cta" href="#request">Подобрать технику <span>↗</span></a>
   </header>
@@ -128,8 +131,10 @@
         <label>Какая ширина подходит?<select name="width"><option value="Пока не знаю">Пока не знаю</option><option>Около 45 см</option><option>Около 60 см</option><option>Нужна компактная модель</option></select></label>
         <label>Для кого выбираете?<select name="family"><option>Для одного-двух человек</option><option>Для семьи из 3–4 человек</option><option>Для большой семьи</option><option>Пока не определился</option></select></label>
         <label>На какой бюджет ориентируетесь?<select name="budget"><option>Пока не определился</option><option>Экономичный</option><option>Средний</option><option>Премиальный</option></select></label>
-        <button class="button button-gold button-wide" type="submit">Получить направление подбора <span>→</span></button>
-        <p class="form-hint">Демонстрационный подбор: ответы не отправляются и не сохраняются.</p>
+        <button class="button button-gold button-wide" type="submit">Сформировать мой профиль <span>→</span></button>
+        <p class="form-hint">Подбор работает локально в браузере. Контактные данные не нужны.</p>
+        <output class="finder-result" id="finderResult" hidden aria-live="polite"></output>
+        <button class="button button-outline button-wide" id="downloadSelection" type="button" hidden>Скачать параметры подбора <span>↓</span></button>
       </form>
     </section>
 
@@ -149,7 +154,7 @@
           <div class="market-info"><small>MIDEA</small><h3>MID45S050</h3><p>Встраиваемая · 9 комплектов · защита от протечек</p><strong>Ориентир: от 23 660 ₽</strong><a href="https://podlovi.ru/m/posudomoechnaya-mashina-midea-mid45s050-MID45S050/" target="_blank" rel="noopener noreferrer">Сравнить предложения ↗</a></div><details class="model-details"><summary>Подробные характеристики <span>＋</span></summary><div class="model-details-body"><dl><div><dt>Габариты (В × Ш × Г)</dt><dd>81,5 × 44,8 × 55 см</dd></div><div><dt>Вместимость</dt><dd>9 комплектов</dd></div><div><dt>Программы</dt><dd>5</dd></div><div><dt>Шум / вода за цикл</dt><dd>49 дБ / 9 л</dd></div><div><dt>Сушка</dt><dd>Конденсационная</dd></div><div><dt>Электроника и функции</dt><dd>Половинная загрузка, отсрочка старта, AquaStop</dd></div></dl><p><b>Подойдёт:</b> если нужна узкая полностью встраиваемая машина для небольшой кухни.</p><p><b>Что учесть:</b> уровень шума 49 дБ; инверторного двигателя и дисплея в официальной спецификации нет.</p><a href="https://www.midea.com/content/midea-aem/ru/vstraivaemaya-tehnika-dlya-kuhni/posudomoechnye-mashiny/mid45s050.html" target="_blank" rel="noopener noreferrer">Официальные характеристики Midea ↗</a></div></details>
         </article>
         <article class="market-card" data-type="built-in" data-width="60" data-price="26125">
-          <div class="market-visual"><img class="market-photo" src="https://www.hausdorf.ru/upload/iblock/e78/9mxhvq1m1wykvdh0beh7suilgc5pz32l/foto_vstraivaemaya_posudomoechnaya_mashina_midea_mid60s050_1.jpg" alt="Внутренняя камера посудомоечной машины Midea MID60S050" loading="lazy" decoding="async"><span>ПОЛНОРАЗМЕРНАЯ · 60 СМ</span></div>
+          <div class="market-visual image-fallback" role="img" aria-label="Стилизованная иллюстрация встраиваемой посудомоечной машины Midea MID60S050"><span>ПОЛНОРАЗМЕРНАЯ · 60 СМ</span><span class="image-fallback-label">Иллюстрация модели</span></div>
           <div class="market-info"><small>MIDEA</small><h3>MID60S050</h3><p>Встраиваемая · 10 комплектов · 5 программ</p><strong>Ориентир: от 26 125 ₽</strong><a href="https://podlovi.ru/m/posudomoechnaya-mashina-midea-mid60s050-MID60S050/" target="_blank" rel="noopener noreferrer">Сравнить предложения ↗</a></div><details class="model-details"><summary>Подробные характеристики <span>＋</span></summary><div class="model-details-body"><dl><div><dt>Тип установки</dt><dd>Полностью встраиваемая</dd></div><div><dt>Ширина</dt><dd>Около 60 см</dd></div><div><dt>Вместимость</dt><dd>10 комплектов*</dd></div><div><dt>Программы</dt><dd>5*</dd></div><div><dt>Сушка</dt><dd>Конденсационная</dd></div><div><dt>Режимы</dt><dd>Половинная загрузка, отсрочка старта</dd></div></dl><p><b>Подойдёт:</b> если нужна полноразмерная встраиваемая модель и важна вместимость.</p><p><b>Что учесть:</b> перед покупкой уточните точные габариты ниши, уровень шума, комплектацию корзин и параметры конкретной партии.</p><a href="https://www.technopark.ru/vstraivaemye-posudomoechnye-mashiny/filt_zaschita_ot-protechek-chastichnaya/midea/" target="_blank" rel="noopener noreferrer">Карточки характеристик Midea в Технопарк ↗</a><small>* По данным карточек продавца; перепроверьте у продавца выбранную версию.</small></div></details>
         </article>
         <article class="market-card" data-type="built-in" data-width="45" data-price="47799">
@@ -196,8 +201,8 @@
       <details><summary>Можно ли заказать доставку по Ульяновску?<span>+</span></summary><p>География проекта — Ульяновск и область. Конкретные сроки, стоимость и доступность доставки необходимо подтвердить до запуска продаж.</p></details>
     </section>
 
-    <section class="request-section" id="request"><div><div class="eyebrow eyebrow-light">ОСТАЛИСЬ ВОПРОСЫ?</div><h2>Давайте подберём<br>технику для вашего дома</h2><p>Проверьте удобство формы. В демонстрационном режиме контакты и сообщения никуда не отправляются и не сохраняются.</p></div>
-      <form class="request-form" id="requestForm"><input name="website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true"><label>Ваше имя<input name="name" required placeholder="Как к вам обращаться"></label><label>Телефон или e-mail<input name="contact" required placeholder="+7 ___ ___-__-__ или e-mail"></label><label>Что ищете?<textarea name="message" rows="3" placeholder="Например, встраиваемую машину шириной около 45 см"></textarea></label><p class="form-hint">Это учебный пример интерфейса. Не вводите реальные персональные данные.</p><button class="button button-gold button-wide" type="submit">Проверить форму <span>→</span></button><small class="form-hint">Демонстрация: введённые данные не отправляются и не сохраняются.</small></form>
+    <section class="request-section" id="request"><div class="request-copy"><div class="eyebrow eyebrow-light">ВАШ СЛЕДУЮЩИЙ ШАГ</div><h2>Выбирайте не по рекламе.<br><em>Выбирайте под себя.</em></h2><p>Ответьте на вопросы в подборщике — получите понятное резюме параметров. Данные остаются в вашем браузере и никуда не отправляются.</p><a class="button button-gold" href="#choose">Начать подбор <span>↗</span></a></div>
+      <div class="request-note"><span class="request-note-mark">D.</span><div><b>Ваш выбор начинается с кухни</b><p>Размер ниши, тип установки, загрузка и привычки важнее случайной скидки.</p><a href="#faq" class="text-link">Что важно проверить перед покупкой ↗</a></div></div>
     </section>
   </main>
   <footer class="footer"><a class="brand brand-footer" href="#"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><span>Демонстрационный проект · Ульяновск</span><span>Демонстрационная версия</span><a href="#top">Наверх ↑</a></footer>

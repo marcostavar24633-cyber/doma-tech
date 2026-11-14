@@ -1,0 +1,168 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const { chromium } = require('playwright');
+
+async function main() {
+  fs.mkdirSync('artifacts', { recursive: true });
+  const server = spawn('python3', ['-m', 'http.server', '4173', '--directory', 'public'], {
+    stdio: 'ignore',
+    detached: false
+  });
+  const browser = await chromium.launch({ headless: true });
+  const errors = [];
+  const unexpectedResponses = [];
+  const waitForServer = async () => {
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      try {
+        const response = await fetch('http://127.0.0.1:4173/');
+        if (response.ok) return;
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    throw new Error('Static preview server did not become ready');
+  };
+
+  try {
+    await waitForServer();
+    const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+    desktop.on('pageerror', error => errors.push('desktop pageerror: ' + error.message));
+    desktop.on('response', response => {
+      const url = new URL(response.url());
+      if (url.hostname === '127.0.0.1' && response.status() >= 400 && url.pathname !== '/api/site-config') {
+        unexpectedResponses.push('desktop ' + response.status() + ' ' + url.pathname);
+      }
+    });
+    desktop.on('console', message => {
+      const source = message.location().url || '';
+      if (message.type() === 'error' && !message.text().includes('Failed to load resource') && source.startsWith('http://127.0.0.1:4173/')) errors.push('desktop console: ' + message.text());
+    });
+    await desktop.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await desktop.locator('.hero h1').waitFor();
+    assert.equal(await desktop.locator('h1').count(), 1, 'The landing page must have one primary H1');
+    assert.ok(await desktop.title().then(title => title.includes('DOMA TECH')), 'Page title must identify DOMA TECH');
+
+    await desktop.waitForFunction(() => [...document.images].every(image => image.complete), { timeout: 15000 }).catch(() => {});
+    const photoStates = await desktop.locator('img.market-photo').evaluateAll(images => images.map(image => ({
+      src: image.currentSrc,
+      loaded: image.naturalWidth > 0,
+      fallback: Boolean(image.closest('.market-visual')?.classList.contains('image-fallback'))
+    })));
+    assert.ok(photoStates.every(image => image.loaded || image.fallback), 'Unavailable product photos must show the designed fallback');
+    const mid60Card = desktop.locator('.market-card').filter({ hasText: 'MID60S050' });
+    assert.equal(await mid60Card.locator('.market-visual.image-fallback').count(), 1, 'MID60S050 must use the intentional product illustration');
+    assert.ok(await mid60Card.locator('.image-fallback-label').isVisible(), 'The illustrative product image must be labelled');
+    console.log('Product image states:', JSON.stringify(photoStates));
+
+    const desktopOverflow = await desktop.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    assert.equal(desktopOverflow, false, 'Desktop layout must not overflow horizontally');
+
+    await desktop.locator('#finderForm button[type="submit"]').click();
+    await desktop.locator('#finderResult').waitFor({ state: 'visible' });
+    assert.match(await desktop.locator('#finderResult').innerText(), /Ваш профиль готов/);
+    const downloadPromise = desktop.waitForEvent('download');
+    await desktop.locator('#downloadSelection').click();
+    const download = await downloadPromise;
+    const downloadPath = path.join('artifacts', 'selection-profile.txt');
+    await download.saveAs(downloadPath);
+    const profile = fs.readFileSync(downloadPath, 'utf8');
+    assert.match(profile, /DOMA TECH — мой профиль подбора/);
+    assert.match(profile, /Тип установки:/);
+
+    await desktop.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await desktop.waitForFunction(() => window.scrollY === 0);
+    await desktop.screenshot({ path: 'artifacts/desktop-1440.png', fullPage: true, animations: 'disabled' });
+
+    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true });
+    mobile.on('pageerror', error => errors.push('mobile pageerror: ' + error.message));
+    mobile.on('response', response => {
+      const url = new URL(response.url());
+      if (url.hostname === '127.0.0.1' && response.status() >= 400 && url.pathname !== '/api/site-config') {
+        unexpectedResponses.push('mobile ' + response.status() + ' ' + url.pathname);
+      }
+    });
+    mobile.on('console', message => {
+      const source = message.location().url || '';
+      if (message.type() === 'error' && !message.text().includes('Failed to load resource') && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
+    });
+    await mobile.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const mobileMetrics = await mobile.evaluate(() => {
+      const width = document.documentElement.clientWidth;
+      const offenders = [...document.querySelectorAll('body *')].map(node => {
+        const rect = node.getBoundingClientRect();
+        return { tag: node.tagName.toLowerCase(), id: node.id, className: typeof node.className === 'string' ? node.className : '', left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
+      }).filter(item => item.right > width + 1 || item.left < -1).sort((a, b) => b.right - a.right).slice(0, 12);
+      const scroller = document.querySelector('.comparison-scroll');
+      const block = document.querySelector('.comparison-block');
+      const describe = node => {
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, cssWidth: style.width, maxWidth: style.maxWidth, minWidth: style.minWidth, overflowX: style.overflowX, display: style.display };
+      };
+      return {
+        innerWidth: window.innerWidth, clientWidth: width, scrollWidth: document.documentElement.scrollWidth,
+        media700: matchMedia('(max-width:700px)').matches,
+        section: describe(document.querySelector('#market-examples')),
+        block: describe(block), scroller: describe(scroller), offenders
+      };
+    });
+    const horizontalBehavior = await mobile.evaluate(() => {
+      const scroller = document.querySelector('.comparison-scroll');
+      const pageCanScroll = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+      window.scrollTo(500, 0);
+      const pageScrollX = window.scrollX;
+      window.scrollTo(0, 0);
+      return {
+        pageScrollX,
+        tableScrollerCanScroll: Boolean(scroller && scroller.scrollWidth > scroller.clientWidth && getComputedStyle(scroller).overflowX === 'auto')
+      };
+    });
+    console.log('Mobile overflow diagnostics:', JSON.stringify({ ...mobileMetrics, horizontalBehavior }));
+    assert.equal(horizontalBehavior.pageScrollX, 0, 'Mobile page itself must not scroll sideways');
+    assert.equal(horizontalBehavior.tableScrollerCanScroll, true, 'Wide comparison table must remain horizontally scrollable inside its panel');
+
+    const menuButton = mobile.locator('.menu-toggle');
+    await menuButton.click();
+    assert.equal(await menuButton.getAttribute('aria-expanded'), 'true', 'Mobile menu button must expose expanded state');
+    assert.ok(await mobile.locator('#nav.open').count(), 'Mobile navigation drawer must open');
+    await mobile.locator('.nav-group summary').first().click();
+    const catalogLink = mobile.locator('.nav-submenu a[href="#catalog"]');
+    await catalogLink.waitFor({ state: 'visible' });
+    await catalogLink.click();
+    assert.equal(await menuButton.getAttribute('aria-expanded'), 'false', 'Selecting a menu item must close the drawer');
+    assert.equal(await mobile.locator('body').evaluate(node => node.classList.contains('menu-open')), false, 'Closing the drawer must restore page scrolling');
+
+    await mobile.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await mobile.waitForFunction(() => window.scrollY === 0);
+    await mobile.screenshot({ path: 'artifacts/mobile-390.png', fullPage: false, animations: 'disabled' });
+    await mobile.locator('#market-examples').scrollIntoViewIfNeeded();
+    await mobile.screenshot({ path: 'artifacts/mobile-catalog-390.png', fullPage: false, animations: 'disabled' });
+
+    assert.deepEqual(errors, [], 'No uncaught browser JavaScript errors should occur');
+    assert.deepEqual(unexpectedResponses, [], 'No unexpected same-origin HTTP errors should occur');
+    console.log('Browser viewport metrics:', await mobile.evaluate(() => JSON.stringify({
+      innerWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      devicePixelRatio: window.devicePixelRatio
+    })));
+    console.log('Browser QA passed: desktop layout, mobile layout, menu, local selection, download, screenshots.');
+  } finally {
+    await browser.close();
+    server.kill('SIGTERM');
+  }
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
