@@ -69,10 +69,14 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
 // Локальная фильтрация демонстрационных моделей: без запросов и хранения данных.
 (()=>{
  const cards=[...document.querySelectorAll('.market-card')];
- const type=document.getElementById('filterType'),width=document.getElementById('filterWidth'),budget=document.getElementById('filterBudget'),result=document.getElementById('filterResult'),reset=document.getElementById('resetFilters');
- if(!cards.length||!type||!width||!budget||!result||!reset)return;
+ const type=document.getElementById('filterType'),width=document.getElementById('filterWidth'),budget=document.getElementById('filterBudget'),sort=document.getElementById('sortModels'),result=document.getElementById('filterResult'),reset=document.getElementById('resetFilters');
+ if(!cards.length||!type||!width||!budget||!sort||!result||!reset)return;
+ const grid=cards[0].parentElement;
  const matchesBudget=price=>budget.value==='under30'?price<30000:budget.value==='30to50'?price>=30000&&price<=50000:budget.value==='over50'?price>50000:true;
- const applyFilters=()=>{let visible=0;cards.forEach(card=>{const show=(type.value==='all'||card.dataset.type===type.value)&&(width.value==='all'||card.dataset.width===width.value)&&matchesBudget(Number(card.dataset.price));card.hidden=!show;if(show)visible++;});result.textContent=visible?'Показано моделей: '+visible+' из '+cards.length:'По выбранным параметрам моделей не найдено. Измените фильтры.';};
- [type,width,budget].forEach(control=>control.addEventListener('change',applyFilters));
- reset.addEventListener('click',()=>{type.value='all';width.value='all';budget.value='all';applyFilters();type.focus();});applyFilters();
+ const applyFilters=()=>{let visible=0;cards.forEach(card=>{const show=(type.value==='all'||card.dataset.type===type.value)&&(width.value==='all'||card.dataset.width===width.value)&&matchesBudget(Number(card.dataset.price));card.hidden=!show;if(show)visible++;});
+  const ordered=[...cards].sort((a,b)=>sort.value==='price-asc'?Number(a.dataset.price)-Number(b.dataset.price):sort.value==='price-desc'?Number(b.dataset.price)-Number(a.dataset.price):cards.indexOf(a)-cards.indexOf(b));
+  ordered.forEach(card=>grid.appendChild(card));
+  result.textContent=visible?'Показано моделей: '+visible+' из '+cards.length:'По выбранным параметрам моделей не найдено. Измените фильтры.';};
+ [type,width,budget,sort].forEach(control=>control.addEventListener('change',applyFilters));
+ reset.addEventListener('click',()=>{type.value='all';width.value='all';budget.value='all';sort.value='default';applyFilters();type.focus();});applyFilters();
 })();
