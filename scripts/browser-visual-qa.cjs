@@ -80,8 +80,16 @@ async function main() {
       if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
     });
     await mobile.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-    const mobileOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-    assert.equal(mobileOverflow, false, 'Mobile layout must not overflow horizontally');
+    const mobileMetrics = await mobile.evaluate(() => {
+      const width = document.documentElement.clientWidth;
+      const offenders = [...document.querySelectorAll('body *')].map(node => {
+        const rect = node.getBoundingClientRect();
+        return { tag: node.tagName.toLowerCase(), id: node.id, className: typeof node.className === 'string' ? node.className : '', left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
+      }).filter(item => item.right > width + 1 || item.left < -1).sort((a, b) => b.right - a.right).slice(0, 12);
+      return { innerWidth: window.innerWidth, clientWidth: width, scrollWidth: document.documentElement.scrollWidth, offenders };
+    });
+    console.log('Mobile overflow diagnostics:', JSON.stringify(mobileMetrics));
+    assert.ok(mobileMetrics.scrollWidth <= mobileMetrics.clientWidth, 'Mobile layout must not overflow horizontally');
 
     const menuButton = mobile.locator('.menu-toggle');
     await menuButton.click();
