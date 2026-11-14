@@ -95,3 +95,93 @@ html{scroll-padding-top:18px}
 .market-visual:has(.market-photo){background:#f7f7f5}
 .market-visual .market-photo+span{z-index:1;padding:6px 9px;background:rgba(255,255,255,.88);border-radius:3px}
 @media(max-width:650px){.market-photo{padding:14px 22px}}
+
+
+/* Premium visual pass — DOMA TECH */
+:root{--ink:#172a35;--ink-soft:#233c47;--gold:#d6a66b;--gold-light:#ead0a8;--paper:#f7f6f2;--line:#e7e3da}
+::selection{background:#d6a66b;color:#172a35}
+.header{position:sticky;top:0;z-index:50;box-shadow:0 6px 24px rgba(23,42,53,.045);backdrop-filter:blur(14px)}
+.brand-mark{border-radius:13px 13px 13px 4px;background:linear-gradient(145deg,#29434e,#10232c);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 7px 18px rgba(23,42,53,.12)}
+.header-cta{border-radius:999px;border-color:#d9c7ae;transition:background .22s ease,color .22s ease,border-color .22s ease,transform .22s ease}
+.header-cta:hover{background:var(--ink);color:#fff;border-color:var(--ink);transform:translateY(-2px)}
+.hero{position:relative;isolation:isolate;background:radial-gradient(ellipse at 78% 46%,rgba(91,119,120,.34),transparent 38%),linear-gradient(115deg,#132630 0%,#1a303b 52%,#203944 100%)}
+.hero:before,.hero:after{content:"";position:absolute;z-index:-1;pointer-events:none;border:1px solid rgba(214,166,107,.13);border-radius:50%;width:620px;height:620px;right:-150px;top:-250px}
+.hero:after{width:470px;height:470px;right:-75px;top:-175px;border-color:rgba(255,255,255,.07)}
+.hero-copy{padding:18px 0}
+.hero h1{max-width:700px;text-wrap:balance}
+.hero h1 em{background:linear-gradient(100deg,#e7c18e,#c9975e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-lead{max-width:455px}
+.button{border-radius:999px;padding:17px 24px;box-shadow:0 8px 22px rgba(10,23,29,.12);transition:transform .25s cubic-bezier(.2,.75,.25,1),box-shadow .25s ease,filter .25s ease}
+.button:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(10,23,29,.2)}
+.button:active{transform:translateY(-1px) scale(.99)}
+.button-gold{background:linear-gradient(115deg,#e5bd87,#c9965d);color:#172a35}
+.text-link{transition:color .2s ease,border-color .2s ease}
+.hero-visual{perspective:900px}
+.dishwasher-art{transform:rotateY(-8deg) rotateX(2deg);transition:transform .55s cubic-bezier(.2,.75,.25,1)}
+.hero-visual:hover .dishwasher-art{transform:rotateY(-2deg) translateY(-5px)}
+.visual-glow{background:radial-gradient(circle,rgba(214,166,107,.19) 0%,rgba(83,102,106,.32) 35%,transparent 72%)}
+.floating-card{border:1px solid rgba(255,255,255,.5);border-radius:14px 14px 14px 4px;backdrop-filter:blur(12px)}
+.trust-strip{box-shadow:0 12px 36px rgba(23,42,53,.035)}
+.section-heading{align-items:flex-end}
+.category-card{border-radius:13px 13px 13px 4px;overflow:hidden}
+.category-card:after{content:"";position:absolute;inset:auto 0 0;height:3px;background:linear-gradient(90deg,#bd8d54,#ead0a8);transform:scaleX(0);transform-origin:left;transition:transform .28s ease}
+.category-card:hover:after,.category-card:focus-visible:after{transform:scaleX(1)}
+.category-card:hover{box-shadow:0 22px 42px rgba(23,42,53,.09);border-color:#ddc6a7}
+.category-card .appliance{transition:transform .35s cubic-bezier(.2,.75,.25,1),filter .35s ease}
+.category-card:hover .appliance{transform:translateY(-5px) scale(1.035);filter:drop-shadow(0 12px 10px rgba(23,42,53,.12))}
+.finder-form{border-radius:18px 18px 18px 5px;box-shadow:0 24px 70px rgba(5,15,20,.18)}
+.finder-form select,.request-form input,.request-form textarea,.market-filters select{border-radius:8px;transition:border-color .2s ease,box-shadow .2s ease}
+.finder-form select:focus,.request-form input:focus,.request-form textarea:focus,.market-filters select:focus{border-color:#c99a63;box-shadow:0 0 0 3px rgba(214,166,107,.16);outline:0}
+.market-card{border-radius:15px 15px 15px 5px;box-shadow:0 5px 18px rgba(23,42,53,.035);transition:transform .28s cubic-bezier(.2,.75,.25,1),box-shadow .28s ease,border-color .28s ease}
+.market-card:hover{transform:translateY(-5px);box-shadow:0 20px 42px rgba(23,42,53,.09);border-color:#d8c4a8}
+.market-visual{height:220px;background:radial-gradient(ellipse at 50% 48%,#fff 0%,#f4f2ec 68%,#ebe8df 100%)}
+.market-photo{padding:22px 32px;transition:transform .35s ease}
+.market-card:hover .market-photo{transform:scale(1.045)}
+.market-info{padding:22px 22px 18px}
+.market-info h3{letter-spacing:-.035em}
+.market-info strong{color:#9b6d3c}
+.market-info a{transition:color .2s ease}
+.market-info a:hover,.model-details-body a:hover{color:#bd8d54}
+.model-details{margin-left:22px;margin-right:22px}
+.model-details summary{font-size:11px;letter-spacing:.015em}
+.model-details summary span{display:grid;place-items:center;width:25px;height:25px;border:1px solid #e8dfd2;border-radius:50%;font-size:15px}
+.comparison-block{border-radius:15px 15px 15px 5px;box-shadow:0 8px 24px rgba(23,42,53,.035)}
+.comparison-scroll{border-radius:9px}
+.comparison-table thead th{background:linear-gradient(110deg,#172a35,#29434e)}
+.steps-grid>div{position:relative;padding:25px 24px;background:rgba(255,255,255,.65);border:1px solid rgba(23,42,53,.07);border-radius:13px 13px 13px 4px}
+.steps-grid>div>span{display:inline-grid;place-items:center;width:36px;height:36px;border:1px solid #d6a66b;border-radius:50%;color:#9b6d3c;font:700 11px Manrope}
+.about{background:#fff}
+.about-mark{color:#d6a66b}
+.faq details{border-bottom:1px solid #e6e2d9}
+.faq summary{transition:color .2s ease}
+.faq summary:hover{color:#9b6d3c}
+.request-section{background:radial-gradient(ellipse at 12% 12%,rgba(214,166,107,.16),transparent 36%),linear-gradient(120deg,#172a35,#203b46);border-radius:0}
+.request-form{border-radius:16px 16px 16px 5px;box-shadow:0 24px 60px rgba(4,14,19,.18)}
+.footer{border-top:1px solid #e8e5de}
+@media(max-width:900px){.hero{padding-top:62px}.hero-visual{min-height:390px}.market-visual{height:205px}}
+@media(max-width:650px){
+ .header{position:relative;height:72px;padding-inline:20px}
+ .header-cta{padding:11px 14px;font-size:10px}
+ .hero{padding:56px 22px 42px;grid-template-columns:1fr;gap:12px}
+ .hero-copy{padding:0}
+ .hero-visual{min-height:330px;margin-top:8px}
+ .dishwasher-art{transform:scale(.88) rotateY(-6deg)}
+ .hero-visual:hover .dishwasher-art{transform:scale(.88) translateY(-4px)}
+ .visual-glow{width:310px;height:310px}
+ .floating-card{left:0;bottom:12px}
+ .trust-strip{padding:22px;grid-template-columns:1fr 1fr;gap:17px}
+ .trust-strip div{padding:0;border:0}
+ .section{padding:64px 22px}
+ .section-heading{display:block}
+ .section-heading>p{margin-top:14px}
+ .category-grid{grid-template-columns:1fr 1fr;gap:11px}
+ .category-card{padding:14px;min-height:236px}
+ .category-card strong{font-size:14px}
+ .market-visual{height:190px}
+ .market-info{padding:18px}
+ .steps-grid{gap:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .dishwasher-art,.category-card,.category-card:after,.category-card .appliance,.market-card,.market-photo,.button,.header-cta{transition:none!important}
+ .hero-visual:hover .dishwasher-art,.category-card:hover .appliance,.market-card:hover,.market-card:hover .market-photo{transform:none}
+}
