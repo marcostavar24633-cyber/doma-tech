@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS products (
   price INTEGER,
   description TEXT NOT NULL DEFAULT '',
   image TEXT NOT NULL DEFAULT '',
+  slug TEXT NOT NULL DEFAULT '',
+  meta_title TEXT NOT NULL DEFAULT '',
+  meta_description TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -78,6 +81,15 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 `);
 
+const productColumns = db.prepare('PRAGMA table_info(products)').all().map(column => column.name);
+if (!productColumns.includes('slug')) db.exec("ALTER TABLE products ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
+if (!productColumns.includes('meta_title')) db.exec("ALTER TABLE products ADD COLUMN meta_title TEXT NOT NULL DEFAULT ''");
+if (!productColumns.includes('meta_description')) db.exec("ALTER TABLE products ADD COLUMN meta_description TEXT NOT NULL DEFAULT ''");
+const slugify = value => cleanText(value, 120).toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9а-яё]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80);
+const existingProducts = db.prepare("SELECT id,name FROM products WHERE slug='' OR slug IS NULL").all();
+const updateLegacyProductSlug = db.prepare('UPDATE products SET slug=? WHERE id=?');
+for (const product of existingProducts) updateLegacyProductSlug.run((slugify(product.name) || 'product') + '-' + product.id, product.id);
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS products_slug_unique ON products(slug) WHERE slug <> \'\'');
 const categoryColumns = db.prepare('PRAGMA table_info(categories)').all().map(column => column.name);
 if (!categoryColumns.includes('description')) db.exec("ALTER TABLE categories ADD COLUMN description TEXT NOT NULL DEFAULT ''");
 
@@ -229,11 +241,13 @@ function validProduct(body) {
   const category = cleanText(body.category, 60);
   const description = cleanText(body.description, 700);
   const image = cleanText(body.image, 500);
+  const metaTitle = cleanText(body.meta_title, 160);
+  const metaDescription = cleanText(body.meta_description, 300);
   const price = body.price === '' || body.price === null || body.price === undefined ? null : Number(body.price);
   if (!name || !category) return { error: 'Укажите название и категорию товара' };
   if (price !== null && (!Number.isSafeInteger(price) || price < 0 || price > 100000000)) return { error: 'Некорректная цена' };
   if (image && !image.startsWith('/uploads/') && !/^https:\/\/.+/i.test(image)) return { error: 'Изображение должно быть HTTPS-ссылкой или файлом из /uploads/' };
-  return { value: { name, category, description, image, price } };
+  return { value: { name, category, description, image, price, metaTitle, metaDescription } };
 }
 const IMAGE_TYPES = {
   'image/jpeg': { ext: '.jpg', label: 'JPEG' },
@@ -271,7 +285,8 @@ app.get('/sitemap.xml', (req,res) => {
   if (settings.robots_index !== 'true' || !settings.site_url) return res.status(404).type('text/plain').send('Sitemap is disabled until indexing and site URL are configured.');
   const lastmod = new Date().toISOString().slice(0,10);
   const categories = db.prepare('SELECT slug,created_at FROM categories WHERE active=1 ORDER BY sort_order,name').all();
-  const urls = [{ loc: settings.site_url + '/', lastmod }, ...categories.map(category => ({ loc: settings.site_url + '/catalog/' + encodeURIComponent(category.slug), lastmod: category.created_at ? category.created_at.slice(0,10) : lastmod }))];
+  const products = db.prepare('SELECT slug,updated_at FROM products WHERE active=1 AND slug<>\'\' ORDER BY id').all();
+  const urls = [{ loc: settings.site_url + '/', lastmod }, ...categories.map(category => ({ loc: settings.site_url + '/catalog/' + encodeURIComponent(category.slug), lastmod: category.created_at ? category.created_at.slice(0,10) : lastmod })), ...products.map(product => ({ loc: settings.site_url + '/product/' + encodeURIComponent(product.slug), lastmod: product.updated_at ? product.updated_at.slice(0,10) : lastmod }))];
   const xmlEscape = value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   const entries = urls.map(item => '<url><loc>' + xmlEscape(item.loc) + '</loc><lastmod>' + item.lastmod + '</lastmod></url>').join('');
   res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\n' +
@@ -288,8 +303,25 @@ app.get('/catalog/:slug', (req,res,next) => {
   const description = category.description || 'Каталог: ' + category.name + '. Посмотрите доступные позиции и характеристики, уточните условия у консультанта DOMA TECH.';
   const esc = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
-  const cards = products.map(product => '<article class="market-card managed-product-card"><div class="market-visual">' + (product.image ? '<img class="market-photo" src="' + esc(product.image) + '" alt="' + esc(product.name) + '" loading="lazy">' : '') + '</div><div class="market-info"><h2>' + esc(product.name) + '</h2><p>' + esc(product.description || 'Подробности уточняйте у консультанта.') + '</p><strong>' + (product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽') + '</strong></div></article>').join('');
+  const cards = products.map(product => '<article class="market-card managed-product-card"><a href="/product/' + encodeURIComponent(product.slug) + '"><div class="market-visual">' + (product.image ? '<img class="market-photo" src="' + esc(product.image) + '" alt="' + esc(product.name) + '" loading="lazy">' : '') + '</div><div class="market-info"><h2>' + esc(product.name) + '</h2><p>' + esc(product.description || 'Подробности уточняйте у консультанта.') + '</p><strong>' + (product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽') + '</strong></div></a></article>').join('');
   const html = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '"><meta name="robots" content="' + robots + '"><meta property="og:type" content="website"><meta property="og:site_name" content="' + esc(settings.site_title || 'DOMA TECH') + '"><meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' + (canonical ? '<link rel="canonical" href="' + esc(canonical) + '"><meta property="og:url" content="' + esc(canonical) + '">' : '') + '<link rel="stylesheet" href="/styles.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><a class="header-cta" href="/">На главную ↗</a></header><main><section class="section"><div class="eyebrow">КАТАЛОГ DOMA TECH</div><h1>' + esc(category.name) + '</h1><p class="section-intro">' + esc(description) + '</p><div class="market-grid">' + (cards || '<p>В этой категории пока нет опубликованных товаров.</p>') + '</div><p><a class="button button-gold" href="/#request">Уточнить наличие и условия</a></p></section></main><footer class="footer"><a href="/">DOMA TECH</a></footer></body></html>';
+  res.set('Cache-Control','no-cache');
+  res.type('html').send(html);
+});
+app.get('/product/:slug', (req,res) => {
+  const product = db.prepare('SELECT p.*,c.name AS category_name,c.slug AS category_slug FROM products p LEFT JOIN categories c ON c.name=p.category WHERE p.slug=? AND p.active=1').get(req.params.slug);
+  if (!product) return res.status(404).type('text/plain').send('Товар не найден');
+  const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
+  const siteUrl = settings.site_url || '';
+  const canonical = siteUrl ? siteUrl + '/product/' + encodeURIComponent(product.slug) : '';
+  const title = product.meta_title || product.name + ' — DOMA TECH';
+  const description = product.meta_description || cleanText(product.description,300) || 'Информация о товаре ' + product.name + '. Уточните характеристики, наличие и условия у DOMA TECH.';
+  const esc = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
+  const categoryLink = product.category_slug ? '<a href="/catalog/' + encodeURIComponent(product.category_slug) + '">' + esc(product.category_name) + '</a>' : esc(product.category);
+  const imageUrl = product.image && (product.image.startsWith('/uploads/') || /^https:\/\//i.test(product.image)) ? product.image : '';
+  const schema = { '@context':'https://schema.org', '@type':'Product', name:product.name, description, ...(imageUrl ? { image: imageUrl.startsWith('http') ? imageUrl : siteUrl + imageUrl } : {}), brand:{'@type':'Brand',name:'DOMA TECH'} };
+  const html = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '"><meta name="robots" content="' + robots + '"><meta property="og:type" content="product"><meta property="og:site_name" content="' + esc(settings.site_title || 'DOMA TECH') + '"><meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' + (imageUrl ? '<meta property="og:image" content="' + esc(imageUrl.startsWith('http') ? imageUrl : siteUrl + imageUrl) + '">' : '') + (canonical ? '<link rel="canonical" href="' + esc(canonical) + '"><meta property="og:url" content="' + esc(canonical) + '">' : '') + '<script type="application/ld+json">' + JSON.stringify(schema).replace(/</g,'\\u003c') + '</script><link rel="stylesheet" href="/styles.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><a class="header-cta" href="/">На главную ↗</a></header><main><section class="section"><nav aria-label="Хлебные крошки"><a href="/">Главная</a> / ' + categoryLink + ' / ' + esc(product.name) + '</nav><div class="market-grid"><article class="market-card managed-product-card"><div class="market-visual">' + (imageUrl ? '<img class="market-photo" src="' + esc(imageUrl) + '" alt="' + esc(product.name) + '">' : '') + '</div><div class="market-info"><div class="eyebrow">DOMA TECH · ' + categoryLink + '</div><h1>' + esc(product.name) + '</h1><p>' + esc(product.description || 'Подробности уточняйте у консультанта.') + '</p><strong>' + (product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽') + '</strong><p><a class="button button-gold" href="/#request">Уточнить наличие и условия</a></p></div></article></div></section></main><footer class="footer"><a href="/">DOMA TECH</a></footer></body></html>';
   res.set('Cache-Control','no-cache');
   res.type('html').send(html);
 });
@@ -442,14 +474,16 @@ app.get('/api/admin/products', requireAdmin, (req,res)=>{
 app.post('/api/admin/products', requireAdmin, csrfCheck, (req,res)=>{
   const checked=validProduct(req.body); if(checked.error) return res.status(400).json({error:checked.error});
   const p=checked.value;
-  const r=db.prepare('INSERT INTO products(name,category,price,description,image) VALUES(?,?,?,?,?)').run(p.name,p.category,p.price,p.description,p.image);
-  res.status(201).json(db.prepare('SELECT * FROM products WHERE id=?').get(r.lastInsertRowid));
+  const result = db.prepare('INSERT INTO products(name,category,price,description,image,meta_title,meta_description) VALUES(?,?,?,?,?,?,?)').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription);
+  const slug = (slugify(p.name) || 'product') + '-' + result.lastInsertRowid;
+  db.prepare('UPDATE products SET slug=? WHERE id=?').run(slug,result.lastInsertRowid);
+  res.status(201).json(db.prepare('SELECT * FROM products WHERE id=?').get(result.lastInsertRowid));
 });
 app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id); if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
   const checked=validProduct(req.body); if(checked.error) return res.status(400).json({error:checked.error});
   const p=checked.value;
-  const r=db.prepare('UPDATE products SET name=?,category=?,price=?,description=?,image=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.name,p.category,p.price,p.description,p.image,id);
+  const r=db.prepare('UPDATE products SET name=?,category=?,price=?,description=?,image=?,meta_title=?,meta_description=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription,id);
   if(!r.changes) return res.status(404).json({error:'Товар не найден'});
   res.json(db.prepare('SELECT * FROM products WHERE id=?').get(id));
 });
