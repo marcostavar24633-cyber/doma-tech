@@ -277,7 +277,7 @@ async function main() {
   const disabledSitemap = await request('/sitemap.xml');
   assert.equal(disabledSitemap.status, 404);
   const disabledRobots = await request('/robots.txt');
-  assert.match(await disabledRobots.text(), /Disallow: \\/);
+  assert.ok((await disabledRobots.text()).includes('Disallow: /'));
   const categoryDelete = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
