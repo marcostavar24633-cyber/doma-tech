@@ -13,7 +13,7 @@ const dataDir = path.resolve(process.env.DATA_DIR || path.join(root, 'data'));
 const backupDir = path.resolve(process.env.BACKUP_DIR || path.join(root, 'backups'));
 const logPath = path.join(dataDir, 'backup-operations.jsonl');
 const NAME = /^doma-tech-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[a-f0-9]{8}\.sqlite$/;
-const TABLES = ['admins', 'products', 'orders', 'sessions'];
+const TABLES = ['admins', 'products', 'orders', 'sessions', 'categories', 'site_settings'];
 
 function hoursSetting(name, fallback) {
   const value = process.env[name] === undefined ? fallback : Number(process.env[name]);
@@ -44,6 +44,8 @@ function verifySqlite(file) {
         throw new Error(`Missing required table: ${table}`);
       }
     }
+    const foreignKeyViolations = db.pragma('foreign_key_check');
+    if (foreignKeyViolations.length) throw new Error(`SQLite foreign_key_check found ${foreignKeyViolations.length} violation(s)`);
   } finally {
     db.close();
   }
