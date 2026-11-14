@@ -5,6 +5,7 @@ require('dotenv').config();
 const Database = require('better-sqlite3');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
+const { constants } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
@@ -86,7 +87,7 @@ async function main() {
     await fs.mkdir(backupDir, { recursive: true, mode: 0o700 });
     const localFile = path.join(backupDir, filename);
     const localManifest = `${localFile}.json`;
-    await fs.copyFile(tempFile, localFile, fs.constants?.COPYFILE_EXCL);
+    await fs.copyFile(tempFile, localFile, constants.COPYFILE_EXCL);
     installedFile = true;
     await fs.copyFile(tempManifest, localManifest, fs.constants?.COPYFILE_EXCL);
     installedManifest = true;
