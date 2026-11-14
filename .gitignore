@@ -6,3 +6,4 @@ uploads/*
 !uploads/.gitkeep
 backups/*
 !backups/.gitkeep
+data/*.jsonl
