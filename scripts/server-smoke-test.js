@@ -67,7 +67,7 @@ async function main() {
 
   const unknownApi = await request('/api/route-that-does-not-exist');
   assert.equal(unknownApi.status, 404);
-  assert.match(unknownApi.headers.get('content-type') || '', /application\\/json/);
+  assert.match(unknownApi.headers.get('content-type') || '', /application\/json/);
 
   const login = await request('/api/admin/login', {
     method: 'POST',
