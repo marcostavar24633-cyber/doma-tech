@@ -235,6 +235,27 @@ function csrfCheck(req, res, next) {
 function cleanText(value, max=500) {
   return String(value ?? '').trim().slice(0, max);
 }
+function localUploadPath(image) {
+  if (typeof image !== 'string' || !image.startsWith('/uploads/')) return null;
+  const filename = image.slice('/uploads/'.length);
+  if (!/^[a-f0-9]{32}\\.(?:jpg|png|webp|avif)$/i.test(filename)) return null;
+  const resolved = path.resolve(UPLOAD_DIR, filename);
+  if (path.dirname(resolved) !== UPLOAD_DIR) return null;
+  return resolved;
+}
+async function removeUnusedLocalUpload(image) {
+  const filePath = localUploadPath(image);
+  if (!filePath) return false;
+  const referenced = db.prepare('SELECT COUNT(*) AS count FROM products WHERE image=?').get(image).count;
+  if (referenced > 0) return false;
+  try {
+    await fs.promises.unlink(filePath);
+    return true;
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error('Could not remove unused product image:', error);
+    return false;
+  }
+}
 function validProduct(body) {
   const name = cleanText(body.name, 120);
   const category = cleanText(body.category, 60);
@@ -499,8 +520,10 @@ app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id); if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
   const checked=validProduct(req.body); if(checked.error) return res.status(400).json({error:checked.error});
   const p=checked.value;
-  const r=db.prepare('UPDATE products SET name=?,category=?,price=?,description=?,image=?,meta_title=?,meta_description=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription,id);
-  if(!r.changes) return res.status(404).json({error:'Товар не найден'});
+  const current=db.prepare('SELECT image FROM products WHERE id=?').get(id);
+  if(!current) return res.status(404).json({error:'Товар не найден'});
+  db.prepare('UPDATE products SET name=?,category=?,price=?,description=?,image=?,meta_title=?,meta_description=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription,id);
+  if(current.image && current.image !== p.image) void removeUnusedLocalUpload(current.image);
   res.json(db.prepare('SELECT * FROM products WHERE id=?').get(id));
 });
 app.patch('/api/admin/products/:id/visibility', requireAdmin, csrfCheck, (req,res)=>{
@@ -511,11 +534,13 @@ app.patch('/api/admin/products/:id/visibility', requireAdmin, csrfCheck, (req,re
   if(!result.changes) return res.status(404).json({error:'Товар не найден'});
   res.json({ok:true,active:Boolean(req.body.active)});
 });
-app.delete('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
+app.delete('/api/admin/products/:id', requireAdmin, csrfCheck, async (req,res)=>{
   const id=Number(req.params.id);
   if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
-  const r=db.prepare('DELETE FROM products WHERE id=?').run(id);
-  if(!r.changes) return res.status(404).json({error:'Товар не найден'});
+  const product=db.prepare('SELECT image FROM products WHERE id=?').get(id);
+  if(!product) return res.status(404).json({error:'Товар не найден'});
+  db.prepare('DELETE FROM products WHERE id=?').run(id);
+  await removeUnusedLocalUpload(product.image);
   res.json({ok:true});
 });
 async function hasValidImageSignature(filePath, mimeType) {
@@ -562,6 +587,12 @@ app.post('/api/admin/upload', requireAdmin, csrfCheck, (req,res)=>{
       if (!res.headersSent) res.status(500).json({error:'Не удалось проверить изображение'});
     });
   });
+});
+app.post('/api/admin/upload/cleanup', requireAdmin, csrfCheck, async (req,res)=>{
+  const image = cleanText(req.body.url, 500);
+  if (!localUploadPath(image)) return res.status(400).json({error:'Некорректный адрес загруженного изображения'});
+  const removed = await removeUnusedLocalUpload(image);
+  res.json({ok:true,removed});
 });
 app.get('/api/admin/orders', requireAdmin, (req,res)=>{
   res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
