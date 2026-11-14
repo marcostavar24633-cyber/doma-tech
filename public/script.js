@@ -153,15 +153,14 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
     setText('.hero h1', settings.hero_title);
     setText('.hero-lead', settings.hero_subtitle);
     setText('.hero-actions .button', settings.hero_cta_text);
-    if (Array.isArray(config.categories) && config.categories.length) {
+    if (Array.isArray(config.categories)) {
       const grid = document.querySelector('.category-grid');
       if (grid) {
         const fragment = document.createDocumentFragment();
         config.categories.forEach((category, index) => {
-          const button = document.createElement('button');
-          button.type = 'button';
+          const button = document.createElement('a');
           button.className = 'category-card';
-          button.dataset.category = category.slug;
+          button.href = '/catalog/' + encodeURIComponent(category.slug);
           const number = document.createElement('span');
           number.className = 'category-num';
           number.textContent = String(index + 1).padStart(2, '0') + ' / ' + category.name.toLocaleUpperCase('ru-RU');
@@ -176,16 +175,6 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           arrow.className = 'card-arrow';
           arrow.textContent = '↗';
           button.append(number, visual, title, hint, arrow);
-          button.addEventListener('click', () => {
-            const field = document.querySelector('#finderForm select[name="type"]');
-            if (field) {
-              let option = [...field.options].find(item => item.value === category.name);
-              if (!option) { option = document.createElement('option'); option.value = category.name; option.textContent = category.name; field.append(option); }
-              field.value = category.name;
-            }
-            scrollToTarget(document.querySelector('#choose'));
-            notify('Категория выбрана. Уточните параметры подбора.');
-          });
           fragment.append(button);
         });
         grid.replaceChildren(fragment);
