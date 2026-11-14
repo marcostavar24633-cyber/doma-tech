@@ -232,6 +232,11 @@ async function main() {
   const afterLogout = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(afterLogout.status, 401);
 
+  const storefrontScript = await request('/script.js');
+  assert.equal(storefrontScript.status, 200);
+  assert.match(await storefrontScript.text(), /api\/site-config/);
+  assert.match(await storefrontScript.text(), /api\/products/);
+
   const adminPage = await request('/admin');
   assert.equal(adminPage.status, 200, 'Admin interface should be served');
   assert.equal(adminPage.headers.get('cache-control'), 'no-store');
@@ -240,7 +245,7 @@ async function main() {
   assert.equal(adminScript.status, 200);
   assert.match(await adminScript.text(), /x-csrf-token/);
 
-  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, and explicit missing-admin response.');
+  console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, category CRUD, site settings, public config, storefront integration, and admin interface.');
 }
 
 main()
