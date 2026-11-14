@@ -261,8 +261,9 @@ async function main() {
   assert.ok(renderedHtml.includes('rel="canonical" href="https://example.test/"'));
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
-  assert.ok((await sitemap.text()).includes('https://example.test/'));
-  assert.ok((await sitemap.text()).includes('https://example.test/catalog/built-in'));
+  const sitemapXml = await sitemap.text();
+  assert.ok(sitemapXml.includes('https://example.test/'));
+  assert.ok(sitemapXml.includes('https://example.test/catalog/built-in'));
   const robots = await request('/robots.txt');
   assert.equal(robots.status, 200);
   assert.ok((await robots.text()).includes('Sitemap: https://example.test/sitemap.xml'));
