@@ -12,7 +12,7 @@ const dataDir = path.resolve(process.env.DATA_DIR || path.join(root, 'data'));
 const backupDir = path.resolve(process.env.BACKUP_DIR || path.join(root, 'backups'));
 const sourcePath = path.join(dataDir, 'doma-tech.sqlite');
 const BACKUP_NAME = /^doma-tech-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[a-f0-9]{8}\.sqlite$/;
-const REQUIRED_TABLES = ['admins', 'products', 'orders', 'sessions'];
+const REQUIRED_TABLES = ['admins', 'products', 'orders', 'sessions', 'categories', 'site_settings'];
 
 function retentionCount() {
   const value = process.env.BACKUP_RETENTION_COUNT === undefined ? 7 : Number(process.env.BACKUP_RETENTION_COUNT);
@@ -42,6 +42,8 @@ function verifyDatabase(filePath) {
       const found = check.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table);
       if (!found) throw new Error(`Backup is missing required table: ${table}`);
     }
+    const foreignKeyViolations = check.pragma('foreign_key_check');
+    if (foreignKeyViolations.length) throw new Error(`SQLite foreign_key_check found ${foreignKeyViolations.length} violation(s)`);
   } finally {
     check.close();
   }
