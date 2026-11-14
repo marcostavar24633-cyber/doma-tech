@@ -58,7 +58,10 @@
     productForm.reset(); $('#form-error').textContent = '';
     productForm.elements.id.value = product ? product.id : '';
     productForm.elements.name.value = product ? product.name : '';
-    productForm.elements.category.value = product ? product.category : '';
+    const categorySelect = productForm.elements.category;
+    categorySelect.innerHTML = '<option value="">Выберите категорию</option>' + state.categories.filter((item) => item.active).map((item) => '<option value="' + esc(item.name) + '">' + esc(item.name) + '</option>').join('');
+    if (product && !state.categories.some((item) => item.name === product.category)) categorySelect.insertAdjacentHTML('beforeend', '<option value="' + esc(product.category) + '">' + esc(product.category) + ' (текущая)</option>');
+    categorySelect.value = product ? product.category : '';
     productForm.elements.price.value = product && product.price != null ? product.price : '';
     productForm.elements.description.value = product ? product.description : '';
     productForm.elements.image.value = product ? product.image : '';
