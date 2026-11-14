@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const Database = require('better-sqlite3');
+const { notify } = require('./backup-notifier');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.resolve(process.env.DATA_DIR || path.join(root, 'data'));
@@ -152,6 +153,11 @@ async function main() {
     warnings
   };
   console.log(JSON.stringify(report, null, 2));
+  if (report.status !== 'healthy') {
+    await notify(report).catch(error => {
+      console.error('Backup notification failed:', error.message);
+    });
+  }
   if (issues.length) process.exitCode = 1;
 }
 
