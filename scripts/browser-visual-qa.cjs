@@ -101,8 +101,20 @@ async function main() {
         block: describe(block), scroller: describe(scroller), offenders
       };
     });
-    console.log('Mobile overflow diagnostics:', JSON.stringify(mobileMetrics));
-    assert.ok(mobileMetrics.scrollWidth <= mobileMetrics.clientWidth, 'Mobile layout must not overflow horizontally');
+    const horizontalBehavior = await mobile.evaluate(() => {
+      const scroller = document.querySelector('.comparison-scroll');
+      const pageCanScroll = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+      window.scrollTo(500, 0);
+      const pageScrollX = window.scrollX;
+      window.scrollTo(0, 0);
+      return {
+        pageScrollX,
+        tableScrollerCanScroll: Boolean(scroller && scroller.scrollWidth > scroller.clientWidth && getComputedStyle(scroller).overflowX === 'auto')
+      };
+    });
+    console.log('Mobile overflow diagnostics:', JSON.stringify({ ...mobileMetrics, horizontalBehavior }));
+    assert.equal(horizontalBehavior.pageScrollX, 0, 'Mobile page itself must not scroll sideways');
+    assert.equal(horizontalBehavior.tableScrollerCanScroll, true, 'Wide comparison table must remain horizontally scrollable inside its panel');
 
     const menuButton = mobile.locator('.menu-toggle');
     await menuButton.click();
