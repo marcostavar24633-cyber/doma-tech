@@ -12,6 +12,7 @@ on:
       - 'scripts/offsite-backup.js'
       - 'scripts/offsite-restore-download.js'
       - 'scripts/run-backup-cycle.js'
+      - 'scripts/check-backup-health.js'
       - 'scripts/restore-db.js'
       - 'scripts/db-maintenance-test.js'
       - 'deploy/systemd/**'
