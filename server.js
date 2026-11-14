@@ -270,8 +270,8 @@ app.get('/sitemap.xml', (req,res) => {
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
   if (settings.robots_index !== 'true' || !settings.site_url) return res.status(404).type('text/plain').send('Sitemap is disabled until indexing and site URL are configured.');
   const lastmod = new Date().toISOString().slice(0,10);
-  const categories = db.prepare('SELECT slug,updated_at FROM categories WHERE active=1 ORDER BY sort_order,name').all();
-  const urls = [{ loc: settings.site_url + '/', lastmod }, ...categories.map(category => ({ loc: settings.site_url + '/catalog/' + encodeURIComponent(category.slug), lastmod: category.updated_at ? category.updated_at.slice(0,10) : lastmod }))];
+  const categories = db.prepare('SELECT slug,created_at FROM categories WHERE active=1 ORDER BY sort_order,name').all();
+  const urls = [{ loc: settings.site_url + '/', lastmod }, ...categories.map(category => ({ loc: settings.site_url + '/catalog/' + encodeURIComponent(category.slug), lastmod: category.created_at ? category.created_at.slice(0,10) : lastmod }))];
   const xmlEscape = value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   const entries = urls.map(item => '<url><loc>' + xmlEscape(item.loc) + '</loc><lastmod>' + item.lastmod + '</lastmod></url>').join('');
   res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\\n' +
