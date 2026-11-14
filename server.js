@@ -125,11 +125,18 @@ function validProduct(body) {
   if (image && !image.startsWith('/uploads/') && !/^https:\/\/.+/i.test(image)) return { error: 'Изображение должно быть HTTPS-ссылкой или файлом из /uploads/' };
   return { value: { name, category, description, image, price } };
 }
+const IMAGE_TYPES = {
+  'image/jpeg': { ext: '.jpg', label: 'JPEG' },
+  'image/png': { ext: '.png', label: 'PNG' },
+  'image/webp': { ext: '.webp', label: 'WEBP' },
+  'image/avif': { ext: '.avif', label: 'AVIF' }
+};
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, crypto.randomBytes(16).toString('hex') + ext);
+    const type = IMAGE_TYPES[file.mimetype];
+    if (!type) return cb(new Error('Неподдерживаемый формат изображения'));
+    cb(null, crypto.randomBytes(16).toString('hex') + type.ext);
   }
 });
 const upload = multer({
@@ -195,11 +202,49 @@ app.delete('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   if(!r.changes) return res.status(404).json({error:'Товар не найден'});
   res.json({ok:true});
 });
+async function hasValidImageSignature(filePath, mimeType) {
+  const handle = await fs.promises.open(filePath, 'r');
+  try {
+    const header = Buffer.alloc(64);
+    const { bytesRead } = await handle.read(header, 0, header.length, 0);
+    const data = header.subarray(0, bytesRead);
+    if (mimeType === 'image/jpeg') {
+      return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+    }
+    if (mimeType === 'image/png') {
+      return data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+    }
+    if (mimeType === 'image/webp') {
+      return data.length >= 12 && data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WEBP';
+    }
+    if (mimeType === 'image/avif') {
+      if (data.length < 16 || data.toString('ascii', 4, 8) !== 'ftyp') return false;
+      const brands = [data.toString('ascii', 8, 12)];
+      for (let offset = 16; offset + 4 <= bytesRead; offset += 4) brands.push(data.toString('ascii', offset, offset + 4));
+      return brands.some(brand => brand === 'avif' || brand === 'avis');
+    }
+    return false;
+  } finally {
+    await handle.close();
+  }
+}
+
 app.post('/api/admin/upload', requireAdmin, csrfCheck, (req,res)=>{
   upload.single('image')(req,res,err=>{
     if(err) return res.status(400).json({error:err.message});
     if(!req.file) return res.status(400).json({error:'Выберите изображение'});
-    res.status(201).json({url:'/uploads/'+req.file.filename});
+    (async () => {
+      const valid = await hasValidImageSignature(req.file.path, req.file.mimetype);
+      if (!valid) {
+        await fs.promises.unlink(req.file.path).catch(() => {});
+        return res.status(400).json({error:'Содержимое файла не соответствует заявленному формату изображения'});
+      }
+      return res.status(201).json({url:'/uploads/'+req.file.filename});
+    })().catch(async error => {
+      await fs.promises.unlink(req.file.path).catch(() => {});
+      console.error('Image upload validation failed:', error);
+      if (!res.headersSent) res.status(500).json({error:'Не удалось проверить изображение'});
+    });
   });
 });
 app.get('/api/admin/orders', requireAdmin, (req,res)=>{
