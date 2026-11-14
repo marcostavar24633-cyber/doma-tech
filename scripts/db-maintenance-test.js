@@ -121,7 +121,7 @@ async function main() {
       encoding: 'utf8'
     });
     assert.equal(cycleRun.status, 0, cycleRun.stderr || cycleRun.stdout);
-    const cycleLog = (await fs.readFile(path.join(cycleDataDir, 'backup-operations.jsonl'), 'utf8')).trim().split(/\\r?\\n/).map(line => JSON.parse(line));
+    const cycleLog = (await fs.readFile(path.join(cycleDataDir, 'backup-operations.jsonl'), 'utf8')).trim().split(/\r?\n/).map(line => JSON.parse(line));
     assert.equal(cycleLog.length, 1);
     assert.equal(cycleLog[0].status, 'success');
     assert.equal(cycleLog[0].offsite, 'skipped');
