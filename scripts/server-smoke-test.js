@@ -252,10 +252,6 @@ async function main() {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(categoryDeleteBlocked.status, 409, 'Category in use by products must not be deleted');
-  const removeCategoryProduct = await request('/api/admin/products/' + categoryProductData.id, {
-    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
-  });
-  assert.equal(removeCategoryProduct.status, 200);
   const settingsUpdate = await request('/api/admin/settings', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
@@ -298,6 +294,11 @@ async function main() {
   assert.equal(disabledSitemap.status, 404);
   const disabledRobots = await request('/robots.txt');
   assert.ok((await disabledRobots.text()).includes('Disallow: /'));
+  const removeCategoryProduct = await request('/api/admin/products/' + categoryProductData.id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(removeCategoryProduct.status, 200);
+
   const categoryDelete = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
