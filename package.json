@@ -13,7 +13,8 @@
     "test:db": "node scripts/db-maintenance-test.js",
     "db:offsite": "node scripts/offsite-backup.js",
     "db:offsite-download": "node scripts/offsite-restore-download.js",
-    "db:backup-cycle": "node scripts/run-backup-cycle.js"
+    "db:backup-cycle": "node scripts/run-backup-cycle.js",
+    "db:backup-health": "node scripts/check-backup-health.js"
   },
   "engines": {
     "node": ">=20"
