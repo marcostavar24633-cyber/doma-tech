@@ -270,8 +270,28 @@ app.get('/sitemap.xml', (req,res) => {
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
   if (settings.robots_index !== 'true' || !settings.site_url) return res.status(404).type('text/plain').send('Sitemap is disabled until indexing and site URL are configured.');
   const lastmod = new Date().toISOString().slice(0,10);
+  const categories = db.prepare('SELECT slug,updated_at FROM categories WHERE active=1 ORDER BY sort_order,name').all();
+  const urls = [{ loc: settings.site_url + '/', lastmod }, ...categories.map(category => ({ loc: settings.site_url + '/catalog/' + encodeURIComponent(category.slug), lastmod: category.updated_at ? category.updated_at.slice(0,10) : lastmod }))];
+  const xmlEscape = value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  const entries = urls.map(item => '<url><loc>' + xmlEscape(item.loc) + '</loc><lastmod>' + item.lastmod + '</lastmod></url>').join('');
   res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + settings.site_url + '/</loc><lastmod>' + lastmod + '</lastmod></url></urlset>');
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + entries + '</urlset>');
+});
+app.get('/catalog/:slug', (req,res,next) => {
+  const category = db.prepare('SELECT id,name,slug,description,updated_at FROM categories WHERE slug=? AND active=1').get(req.params.slug);
+  if (!category) return res.status(404).type('text/plain').send('Категория не найдена');
+  const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
+  const products = db.prepare('SELECT id,name,price,description,image FROM products WHERE active=1 AND category=? ORDER BY created_at DESC').all(category.name);
+  const siteUrl = settings.site_url || '';
+  const canonical = siteUrl ? siteUrl + '/catalog/' + encodeURIComponent(category.slug) : '';
+  const title = category.name + ' — каталог DOMA TECH';
+  const description = category.description || 'Каталог: ' + category.name + '. Посмотрите доступные позиции и характеристики, уточните условия у консультанта DOMA TECH.';
+  const esc = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
+  const cards = products.map(product => '<article class="market-card managed-product-card"><div class="market-visual">' + (product.image ? '<img class="market-photo" src="' + esc(product.image) + '" alt="' + esc(product.name) + '" loading="lazy">' : '') + '</div><div class="market-info"><h2>' + esc(product.name) + '</h2><p>' + esc(product.description || 'Подробности уточняйте у консультанта.') + '</p><strong>' + (product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽') + '</strong></div></article>').join('');
+  const html = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '"><meta name="robots" content="' + robots + '"><meta property="og:type" content="website"><meta property="og:site_name" content="' + esc(settings.site_title || 'DOMA TECH') + '"><meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' + (canonical ? '<link rel="canonical" href="' + esc(canonical) + '"><meta property="og:url" content="' + esc(canonical) + '">' : '') + '<link rel="stylesheet" href="/styles.css"></head><body><header class="header"><a class="brand" href="/"><span class="brand-mark">D</span><span>DOMA <b>TECH</b><small>ТЕХНИКА ДЛЯ ДОМА</small></span></a><a class="header-cta" href="/">На главную ↗</a></header><main><section class="section"><div class="eyebrow">КАТАЛОГ DOMA TECH</div><h1>' + esc(category.name) + '</h1><p class="section-intro">' + esc(description) + '</p><div class="market-grid">' + (cards || '<p>В этой категории пока нет опубликованных товаров.</p>') + '</div><p><a class="button button-gold" href="/#request">Уточнить наличие и условия</a></p></section></main><footer class="footer"><a href="/">DOMA TECH</a></footer></body></html>';
+  res.set('Cache-Control','no-cache');
+  res.type('html').send(html);
 });
 app.get('/', (req,res,next) => {
   const settings = Object.fromEntries(db.prepare('SELECT key,value FROM site_settings').all().map(row => [row.key,row.value]));
