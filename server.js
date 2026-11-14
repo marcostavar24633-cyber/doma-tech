@@ -275,7 +275,9 @@ app.get('/', (req,res,next) => {
     const siteUrl = settings.site_url || '';
     const robots = settings.robots_index === 'true' && siteUrl ? 'index,follow' : 'noindex,follow';
     const escapeAttr = value => String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-    html = html.replace(/<title>[\\s\\S]*?<\\/title>/i, '<title>' + escapeAttr(settings.meta_title || settings.site_title || 'DOMA TECH') + '</title>');
+    const titleStart = html.toLowerCase().indexOf('<title>');
+    const titleEnd = html.toLowerCase().indexOf('</title>', titleStart);
+    if (titleStart >= 0 && titleEnd >= 0) html = html.slice(0, titleStart) + '<title>' + escapeAttr(settings.meta_title || settings.site_title || 'DOMA TECH') + '</title>' + html.slice(titleEnd + 8);
     html = html.replace(/<meta name="description" content="[^"]*">/i, '<meta name="description" content="' + escapeAttr(settings.meta_description) + '">');
     html = html.replace(/<meta property="og:title" content="[^"]*">/i, '<meta property="og:title" content="' + escapeAttr(settings.meta_title || settings.site_title) + '">');
     html = html.replace(/<meta name="twitter:title" content="[^"]*">/i, '<meta name="twitter:title" content="' + escapeAttr(settings.meta_title || settings.site_title) + '">');
