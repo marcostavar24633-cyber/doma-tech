@@ -113,6 +113,35 @@ async function main() {
     assert.equal(await fs.readFile(downloaded).then(data => data.length), await fs.readFile(path.join(remoteDir, validBackups[0])).then(data => data.length));
     assert.equal(JSON.parse(await fs.readFile(downloaded + '.json', 'utf8')).file, validBackups[0]);
 
+    // Disaster-recovery drill: restore the downloaded offsite copy into an isolated,
+    // deliberately divergent database and verify application data after restoration.
+    const disasterDataDir = path.join(temp, 'disaster-recovery-data');
+    await fs.mkdir(disasterDataDir, { recursive: true });
+    const disasterDbPath = path.join(disasterDataDir, 'doma-tech.sqlite');
+    const disasterDb = new Database(disasterDbPath);
+    disasterDb.exec(`
+      CREATE TABLE admins (id INTEGER PRIMARY KEY, username TEXT, password_hash TEXT);
+      CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE sessions (sid TEXT PRIMARY KEY, sess TEXT, expires_at INTEGER);
+      INSERT INTO products(name) VALUES ('Divergent disaster state');
+    `);
+    disasterDb.close();
+
+    const disasterRestore = spawnSync(process.execPath, [path.join(__dirname, 'restore-db.js'), validBackups[0]], {
+      env: { ...env, DATA_DIR: disasterDataDir, BACKUP_DIR: restoredBackupDir, ALLOW_DB_RESTORE: 'true' },
+      encoding: 'utf8'
+    });
+    assert.equal(disasterRestore.status, 0, disasterRestore.stderr || disasterRestore.stdout);
+    const disasterRestoredDb = new Database(disasterDbPath, { readonly: true });
+    assert.equal(disasterRestoredDb.pragma('integrity_check', { simple: true }), 'ok');
+    assert.equal(disasterRestoredDb.prepare('SELECT name FROM products').get().name, 'Before backup');
+    disasterRestoredDb.close();
+    const disasterFiles = await fs.readdir(restoredBackupDir);
+    assert.ok(disasterFiles.some(name => name.startsWith('doma-tech-before-restore-') && name.endsWith('.sqlite')),
+      'Disaster recovery must preserve a pre-restore safety copy');
+
+
     const cycleDataDir = path.join(temp, 'cycle-data');
     const cycleBackupDir = path.join(temp, 'cycle-backups');
     await fs.mkdir(cycleDataDir, { recursive: true });
@@ -152,7 +181,7 @@ async function main() {
     assert.equal(JSON.parse(staleHealthRun.stdout).status, 'critical');
 
 
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download validation, scheduled backup cycle and notification formatting/no-config behavior.');
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download and isolated disaster-recovery restore validation, scheduled backup cycle and notification formatting/no-config behavior.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
