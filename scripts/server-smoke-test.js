@@ -86,6 +86,28 @@ async function main() {
   assert.equal(me.headers.get('cache-control'), 'no-store');
   assert.equal((await me.json()).authenticated, true);
 
+  const invalidUpload = await request('/api/admin/upload', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken },
+    body: (() => {
+      const form = new FormData();
+      form.append('image', new Blob(['not an image'], { type: 'image/png' }), 'fake.png');
+      return form;
+    })()
+  });
+  assert.equal(invalidUpload.status, 400, 'Upload must reject a file with a mismatched image signature');
+
+  const oversizedUpload = await request('/api/admin/upload', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken },
+    body: (() => {
+      const form = new FormData();
+      form.append('image', new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: 'image/png' }), 'large.png');
+      return form;
+    })()
+  });
+  assert.equal(oversizedUpload.status, 400, 'Upload must reject files larger than 5 MiB');
+
   const invalidProductId = await request('/api/admin/products/0', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
