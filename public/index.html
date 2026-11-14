@@ -74,16 +74,23 @@
 
     <section class="section catalog-preview" id="market-examples">
       <div class="section-heading"><div><div class="eyebrow">ОРИЕНТИР ПО РЫНКУ</div><h2>Примеры моделей</h2></div><p>Несколько моделей, которые можно рассмотреть при выборе. Это не ассортимент и не цены DOMA TECH.</p></div>
+      <div class="market-filters" aria-label="Фильтры моделей">
+        <label>Тип установки<select id="filterType"><option value="all">Любой</option><option value="built-in">Встраиваемая</option><option value="freestanding">Отдельностоящая</option></select></label>
+        <label>Ширина<select id="filterWidth"><option value="all">Любая</option><option value="45">Около 45 см</option><option value="60">Около 60 см</option></select></label>
+        <label>Бюджет<select id="filterBudget"><option value="all">Любой</option><option value="under30">До 30 000 ₽</option><option value="30to50">30 000–50 000 ₽</option><option value="over50">От 50 000 ₽</option></select></label>
+        <button class="filter-reset" id="resetFilters" type="button">Сбросить</button>
+      </div>
+      <p class="filter-result" id="filterResult" role="status" aria-live="polite">Показано 3 модели из 3</p>
       <div class="market-grid">
-        <article class="market-card">
+        <article class="market-card" data-type="built-in" data-width="45" data-price="23660">
           <div class="market-visual"><div class="appliance appliance-slim"><i></i><b></b></div><span>УЗКАЯ · 45 СМ</span></div>
           <div class="market-info"><small>MIDEA</small><h3>MID45S050</h3><p>Встраиваемая · 9 комплектов · защита от протечек</p><strong>Ориентир: от 23 660 ₽</strong><a href="https://podlovi.ru/m/posudomoechnaya-mashina-midea-mid45s050-MID45S050/" target="_blank" rel="noopener noreferrer">Сравнить предложения ↗</a></div>
         </article>
-        <article class="market-card">
+        <article class="market-card" data-type="built-in" data-width="60" data-price="26125">
           <div class="market-visual"><div class="appliance appliance-built"><i></i><b></b></div><span>ПОЛНОРАЗМЕРНАЯ · 60 СМ</span></div>
           <div class="market-info"><small>MIDEA</small><h3>MID60S050</h3><p>Встраиваемая · 10 комплектов · 5 программ</p><strong>Ориентир: от 26 125 ₽</strong><a href="https://podlovi.ru/m/posudomoechnaya-mashina-midea-mid60s050-MID60S050/" target="_blank" rel="noopener noreferrer">Сравнить предложения ↗</a></div>
         </article>
-        <article class="market-card">
+        <article class="market-card" data-type="built-in" data-width="45" data-price="47799">
           <div class="market-visual"><div class="appliance appliance-slim"><i></i><b></b></div><span>УЗКАЯ · 45 СМ</span></div>
           <div class="market-info"><small>BOSCH</small><h3>SPV4HMX10E</h3><p>Встраиваемая · 44,8 см · 10 комплектов · 6 программ · 3 корзины</p><strong>Ориентир: от 47 799 ₽</strong><a href="https://podlovi.ru/m/posudomoechnaya-mashina-bosch-spv4hmx10e-SPV4HMX10E/" target="_blank" rel="noopener noreferrer">Сравнить предложения ↗</a></div>
         </article>
