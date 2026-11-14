@@ -3,6 +3,7 @@
 const Database = require('better-sqlite3');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
+const { constants } = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
@@ -67,8 +68,11 @@ async function main() {
 
   const staged = path.join(dataDir, `restore-${process.pid}.sqlite`);
   try {
-    await fs.copyFile(source, staged, fs.constants.COPYFILE_EXCL);
+    await fs.copyFile(source, staged, constants.COPYFILE_EXCL);
     await verifyDatabase(staged);
+    // The app must be stopped so no live SQLite connections or pending WAL writes exist.
+    await fs.unlink(`${livePath}-wal`).catch(error => { if (error.code !== 'ENOENT') throw error; });
+    await fs.unlink(`${livePath}-shm`).catch(error => { if (error.code !== 'ENOENT') throw error; });
     await fs.rename(staged, livePath);
   } catch (error) {
     await fs.unlink(staged).catch(() => {});
