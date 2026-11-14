@@ -260,7 +260,7 @@ app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge:'7d', fallthrough:false }));
 app.use(express.static(path.join(ROOT,'public')));
-app.get('/admin', (req,res)=>res.sendFile(path.join(ROOT,'public','admin.html')));
+app.get('/admin', (req,res)=>res.status(404).json({ error:'Административная панель ещё не создана' }));
 app.get('*', (req,res)=>res.sendFile(path.join(ROOT,'public','index.html')));
 app.use((err,req,res,next)=>{
   console.error(err);
