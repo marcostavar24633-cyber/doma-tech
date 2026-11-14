@@ -37,6 +37,8 @@
       <nav class="tabs" aria-label="Разделы панели">
         <button class="tab active" data-tab="products" type="button">Товары <span id="product-count">0</span></button>
         <button class="tab" data-tab="orders" type="button">Заявки <span id="order-count">0</span></button>
+        <button class="tab" data-tab="categories" type="button">Категории</button>
+        <button class="tab" data-tab="settings" type="button">Настройки сайта</button>
       </nav>
       <p id="notice" class="notice" role="status" aria-live="polite"></p>
       <section id="products-panel" class="panel">
@@ -46,6 +48,23 @@
       <section id="orders-panel" class="panel" hidden>
         <div class="section-head"><div><h2>Заявки клиентов</h2><p class="muted">Контактные данные доступны только авторизованному администратору.</p></div></div>
         <div id="order-list" class="order-list"><p class="muted">Загрузка заявок…</p></div>
+      </section>
+      <section id="categories-panel" class="panel" hidden>
+        <div class="section-head"><div><h2>Категории каталога</h2><p class="muted">Названия используются для группировки товаров.</p></div></div>
+        <form id="category-form" class="inline-form"><input name="name" required maxlength="60" placeholder="Название категории"><input name="slug" maxlength="80" placeholder="URL (можно оставить пустым)"><input name="sort_order" type="number" min="0" max="10000" value="0" aria-label="Порядок"><button class="primary" type="submit">Добавить</button></form>
+        <p id="category-error" class="error" role="alert"></p><div id="category-list" class="product-list"></div>
+      </section>
+      <section id="settings-panel" class="panel" hidden>
+        <div class="section-head"><div><h2>Основные настройки и SEO</h2><p class="muted">Сохраняются в базе сервера. Публичная страница подключается отдельно.</p></div></div>
+        <form id="settings-form" class="settings-form">
+          <label>Название сайта<input name="site_title" required maxlength="120"></label>
+          <label>Заголовок первого экрана<input name="hero_title" required maxlength="120"></label>
+          <label>Подзаголовок<textarea name="hero_subtitle" rows="2" maxlength="300"></textarea></label>
+          <label>Текст основной кнопки<input name="hero_cta_text" maxlength="120"></label>
+          <label>SEO Title<input name="meta_title" required maxlength="120"></label>
+          <label>SEO Description<textarea name="meta_description" rows="3" maxlength="300"></textarea></label>
+          <p id="settings-error" class="error" role="alert"></p><button class="primary" type="submit">Сохранить настройки</button>
+        </form>
       </section>
       <footer class="footnote">Защищённое соединение и серверная конфигурация должны быть настроены перед использованием с реальными клиентами.</footer>
     </section>
