@@ -22,15 +22,20 @@ if(menuButton&&nav){
     menuButton.setAttribute('aria-label','Открыть меню');
     if(returnFocus)menuButton.focus();
   };
-  menuButton.addEventListener('click',()=>{
-    const open=menuButton.getAttribute('aria-expanded')!=='true';
-    nav.classList.toggle('open',open);
-    menuButton.setAttribute('aria-expanded',String(open));
-    menuButton.setAttribute('aria-label',open?'Закрыть меню':'Открыть меню');
-  });
+  const openMenu=()=>{
+    nav.classList.add('open');
+    menuButton.setAttribute('aria-expanded','true');
+    menuButton.setAttribute('aria-label','Закрыть меню');
+    const first=nav.querySelector('a,summary');
+    first?.focus({preventScroll:true});
+  };
+  menuButton.addEventListener('click',()=>menuButton.getAttribute('aria-expanded')==='true'?closeMenu():openMenu());
   nav.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>closeMenu()));
+  nav.querySelectorAll('.nav-group').forEach(group=>group.addEventListener('toggle',()=>{
+    if(group.open)nav.querySelectorAll('.nav-group').forEach(other=>{if(other!==group)other.open=false;});
+  }));
   document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'&&nav.classList.contains('open'))closeMenu({returnFocus:true});
+    if(event.key==='Escape'&&nav.classList.contains('open')){closeMenu({returnFocus:true});}
   });
   document.addEventListener('click',event=>{
     if(nav.classList.contains('open')&&!nav.contains(event.target)&&!menuButton.contains(event.target))closeMenu();
@@ -57,27 +62,29 @@ document.querySelectorAll('.category-card').forEach(card=>card.addEventListener(
   notify('Категория выбрана. Уточните параметры подбора.');
 }));
 
+let currentSelection='';
 document.getElementById('finderForm')?.addEventListener('submit',event=>{
   event.preventDefault();
   const values=Object.fromEntries(new FormData(event.currentTarget).entries());
-  const message=[
-    'Подбор техники:',
-    'тип — '+values.type,
-    'ширина — '+values.width,
-    'для кого — '+values.family,
-    'бюджет — '+values.budget
-  ].join('; ');
-  const messageField=document.querySelector('#requestForm textarea[name="message"]');
-  if(messageField)messageField.value=message;
-  scrollToTarget(document.querySelector('#request'));
-  notify('Параметры подбора перенесены в демонстрационную форму.');
+  const labels={type:'Тип установки',width:'Ширина',family:'Состав семьи',budget:'Бюджет'};
+  currentSelection='DOMA TECH — мой профиль подбора\\n\\n'+Object.entries(values).map(([key,value])=>labels[key]+': '+value).join('\\n')+'\\n\\nПеред покупкой проверьте точные габариты ниши, подключение, уровень шума, расход воды, гарантию и наличие у продавца.';
+  const output=document.getElementById('finderResult');
+  if(output){
+    output.hidden=false;
+    output.textContent='Ваш профиль готов. '+Object.entries(values).map(([key,value])=>labels[key].toLowerCase()+': '+value).join(' · ')+'. Ниже можно сохранить его в текстовый файл.';
+  }
+  const download=document.getElementById('downloadSelection');
+  if(download)download.hidden=false;
+  notify('Профиль подбора сформирован в этом браузере.');
 });
-
-document.getElementById('requestForm')?.addEventListener('submit',event=>{
-  event.preventDefault();
-  notify('Это демонстрационная форма: данные не отправлены и не сохранены.');
+document.getElementById('downloadSelection')?.addEventListener('click',()=>{
+  if(!currentSelection)return;
+  const blob=new Blob([currentSelection],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;link.download='doma-tech-profile.txt';
+  document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
 });
-
 document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('toggle',()=>{
   const sign=item.querySelector('summary span');
   if(sign)sign.textContent=item.open?'−':'+';
