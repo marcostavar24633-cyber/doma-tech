@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily DOMA TECH backup health check
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=5m
+Persistent=true
+Unit=doma-tech-backup-health.service
+
+[Install]
+WantedBy=timers.target
