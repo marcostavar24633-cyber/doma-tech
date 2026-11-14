@@ -223,6 +223,11 @@ async function main() {
     body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1, active: true })
   });
   assert.equal(publishCategory.status, 200);
+  const categoryPage = await request('/catalog/built-in');
+  assert.equal(categoryPage.status, 200);
+  const categoryHtml = await categoryPage.text();
+  assert.ok(categoryHtml.includes('<title>Built-in — каталог DOMA TECH</title>'));
+  assert.ok(categoryHtml.includes('name="robots" content="noindex,follow"'));
   const categoryList = await request('/api/admin/categories', { headers: { cookie } });
   assert.ok((await categoryList.json()).some(item => item.id === category.id));
   const categoryProduct = await request('/api/admin/products', {
@@ -257,6 +262,7 @@ async function main() {
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
   assert.ok((await sitemap.text()).includes('https://example.test/'));
+  assert.ok((await sitemap.text()).includes('https://example.test/catalog/built-in'));
   const robots = await request('/robots.txt');
   assert.equal(robots.status, 200);
   assert.ok((await robots.text()).includes('Sitemap: https://example.test/sitemap.xml'));
