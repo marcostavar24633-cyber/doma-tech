@@ -150,8 +150,7 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
       const ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.content = settings.meta_title;
     }
-    setText('.brand [data-site-title]', settings.site_title);
-    setText('.hero h1 [data-hero-title]', settings.hero_title);
+    setText('.hero h1', settings.hero_title);
     setText('.hero-lead', settings.hero_subtitle);
     setText('.hero-actions .button', settings.hero_cta_text);
     if (Array.isArray(config.categories) && config.categories.length) {
