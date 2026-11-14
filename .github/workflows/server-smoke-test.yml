@@ -1,0 +1,39 @@
+name: Server smoke tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/server-smoke-test.js'
+      - '.github/workflows/server-smoke-test.yml'
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/server-smoke-test.js'
+      - '.github/workflows/server-smoke-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run isolated server smoke tests
+        run: npm test
