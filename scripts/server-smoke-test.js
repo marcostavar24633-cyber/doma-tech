@@ -462,7 +462,7 @@ async function main() {
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(logout.status, 200);
-  assert.match(logout.headers.get('set-cookie') || '', /doma\\.sid=;/, 'Logout must clear the session cookie');
+  assert.match(logout.headers.get('set-cookie') || '', /doma\.sid=;/, 'Logout must clear the session cookie');
   const afterLogout = await request('/api/admin/me', { headers: { cookie } });
   assert.equal(afterLogout.status, 401);
 
