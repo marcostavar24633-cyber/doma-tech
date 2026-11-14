@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
@@ -32,6 +31,12 @@ const db = new Database(path.join(DATA_DIR, 'doma-tech.sqlite'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.exec(`
+CREATE TABLE IF NOT EXISTS sessions (
+  sid TEXT PRIMARY KEY,
+  sess TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS admins (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,
@@ -83,8 +88,89 @@ app.use(helmet({
 }));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+class SQLiteSessionStore extends session.Store {
+  constructor(database) {
+    super();
+    this.db = database;
+    this.statements = {
+      get: database.prepare('SELECT sess, expires_at FROM sessions WHERE sid = ?'),
+      set: database.prepare('INSERT INTO sessions(sid, sess, expires_at) VALUES(?, ?, ?) ON CONFLICT(sid) DO UPDATE SET sess=excluded.sess, expires_at=excluded.expires_at'),
+      touch: database.prepare('UPDATE sessions SET expires_at = ? WHERE sid = ?'),
+      destroy: database.prepare('DELETE FROM sessions WHERE sid = ?'),
+      purge: database.prepare('DELETE FROM sessions WHERE expires_at <= ?')
+    };
+  }
+
+  expiry(sessionData) {
+    const expires = sessionData && sessionData.cookie && sessionData.cookie.expires;
+    const parsed = expires ? new Date(expires).getTime() : NaN;
+    if (Number.isFinite(parsed)) return parsed;
+    const maxAge = sessionData && sessionData.cookie && Number(sessionData.cookie.maxAge);
+    return Number.isFinite(maxAge) && maxAge > 0 ? Date.now() + maxAge : Date.now() + 8 * 60 * 60 * 1000;
+  }
+
+  get(sid, callback) {
+    try {
+      this.statements.purge.run(Date.now());
+      const row = this.statements.get.get(sid);
+      if (!row || row.expires_at <= Date.now()) return callback(null, null);
+      return callback(null, JSON.parse(row.sess));
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  set(sid, sessionData, callback = () => {}) {
+    try {
+      const expiresAt = this.expiry(sessionData);
+      this.statements.set.run(sid, JSON.stringify(sessionData), expiresAt);
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  touch(sid, sessionData, callback = () => {}) {
+    try {
+      const expiresAt = this.expiry(sessionData);
+      this.statements.touch.run(expiresAt, sid);
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  destroy(sid, callback = () => {}) {
+    try {
+      this.statements.destroy.run(sid);
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  clear(callback = () => {}) {
+    try {
+      this.db.prepare('DELETE FROM sessions').run();
+      return callback(null);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+
+  length(callback) {
+    try {
+      this.statements.purge.run(Date.now());
+      const row = this.db.prepare('SELECT COUNT(*) AS count FROM sessions').get();
+      return callback(null, row.count);
+    } catch (error) {
+      return callback(error);
+    }
+  }
+}
+
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR, concurrentDB: true }),
+  store: new SQLiteSessionStore(db),
   name: 'doma.sid',
   secret: process.env.SESSION_SECRET || 'development-only-secret-change-before-deploy',
   resave: false,
