@@ -8,6 +8,9 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/server-smoke-test.js'
+      - 'scripts/backup-db.js'
+      - 'scripts/restore-db.js'
+      - 'scripts/db-maintenance-test.js'
       - '.github/workflows/server-smoke-test.yml'
   pull_request:
     paths:
