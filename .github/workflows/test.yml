@@ -30,5 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check browser script syntax
+        run: node --check public/script.js
+
       - name: Run server and database tests
         run: npm test
