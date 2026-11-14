@@ -121,11 +121,27 @@ async function main() {
       encoding: 'utf8'
     });
     assert.equal(cycleRun.status, 0, cycleRun.stderr || cycleRun.stdout);
-    const cycleLog = (await fs.readFile(path.join(cycleDataDir, 'backup-operations.jsonl'), 'utf8')).trim().split('\\n').map(line => JSON.parse(line));
+    const cycleLog = (await fs.readFile(path.join(cycleDataDir, 'backup-operations.jsonl'), 'utf8')).trim().split(/\\r?\\n/).map(line => JSON.parse(line));
     assert.equal(cycleLog.length, 1);
     assert.equal(cycleLog[0].status, 'success');
     assert.equal(cycleLog[0].offsite, 'skipped');
+
     assert.ok(cycleLog[0].backupFile);
+
+    const healthRun = spawnSync(process.execPath, [path.join(__dirname, 'check-backup-health.js')], {
+      env: { ...process.env, DATA_DIR: cycleDataDir, BACKUP_DIR: cycleBackupDir, BACKUP_MAX_AGE_HOURS: '26' },
+      encoding: 'utf8'
+    });
+    assert.equal(healthRun.status, 0, healthRun.stderr || healthRun.stdout);
+    assert.equal(JSON.parse(healthRun.stdout).status, 'healthy');
+
+    const staleHealthRun = spawnSync(process.execPath, [path.join(__dirname, 'check-backup-health.js')], {
+      env: { ...process.env, DATA_DIR: cycleDataDir, BACKUP_DIR: cycleBackupDir, BACKUP_MAX_AGE_HOURS: '0.000001' },
+      encoding: 'utf8'
+    });
+    assert.notEqual(staleHealthRun.status, 0, 'Health check must fail for a stale local backup');
+    assert.equal(JSON.parse(staleHealthRun.stdout).status, 'critical');
+
 
     console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download validation and scheduled backup cycle.');
   } finally {
