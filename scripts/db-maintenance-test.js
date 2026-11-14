@@ -54,7 +54,7 @@ async function main() {
       assert.equal(rotated.status, 0, rotated.stderr || rotated.stdout);
     }
     const rotatedEntries = await fs.readdir(backupDir);
-    const validBackups = rotatedEntries.filter(name => /^doma-tech-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z-[a-f0-9]{8}\\.sqlite$/.test(name));
+    const validBackups = rotatedEntries.filter(name => /^doma-tech-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[a-f0-9]{8}\.sqlite$/.test(name));
     assert.equal(validBackups.length, 2, 'Rotation must retain exactly the configured number of verified backups');
     for (const backupName of validBackups) {
       const manifest = JSON.parse(await fs.readFile(path.join(backupDir, backupName + '.json'), 'utf8'));
