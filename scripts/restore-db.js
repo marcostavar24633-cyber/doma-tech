@@ -77,8 +77,18 @@ async function main() {
 
   const source = path.join(backupDir, filename);
   const manifestPath = `${source}.json`;
-  const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
-  if (manifest.file !== filename || manifest.integrity !== 'ok' || !/^[a-f0-9]{64}$/.test(manifest.sha256 || '')) {
+  let manifest;
+  try {
+    manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  } catch {
+    throw new Error('Backup manifest is missing or invalid JSON.');
+  }
+  if (
+    manifest.file !== filename ||
+    manifest.integrity !== 'ok' ||
+    !Number.isFinite(Date.parse(manifest.createdAt)) ||
+    !/^[a-f0-9]{64}$/.test(manifest.sha256 || '')
+  ) {
     throw new Error('Backup manifest is invalid.');
   }
   if (await sha256(source) !== manifest.sha256) throw new Error('Backup SHA-256 does not match its manifest.');
