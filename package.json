@@ -11,7 +11,8 @@
     "db:backup": "node scripts/backup-db.js",
     "db:restore": "node scripts/restore-db.js",
     "test:db": "node scripts/db-maintenance-test.js",
-    "db:offsite": "node scripts/offsite-backup.js"
+    "db:offsite": "node scripts/offsite-backup.js",
+    "db:offsite-download": "node scripts/offsite-restore-download.js"
   },
   "engines": {
     "node": ">=20"
