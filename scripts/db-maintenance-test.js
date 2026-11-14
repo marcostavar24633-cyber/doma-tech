@@ -93,7 +93,7 @@ async function main() {
       'const from = source.includes(":") ? path.join(process.env.RCLONE_TEST_REMOTE_DIR, path.basename(source)) : source;',
       'const to = target.includes(":") ? path.join(process.env.RCLONE_TEST_REMOTE_DIR, path.basename(target)) : target;',
       'fs.copyFileSync(from, to);'
-    ].join('\\n') + '\\n');
+    ].join('\n') + '\n');
     await fs.chmod(downloadMock, 0o755);
     const downloadRun = spawnSync(process.execPath, [path.join(__dirname, 'offsite-restore-download.js'), validBackups[0]], {
       env: { ...env, BACKUP_DIR: restoredBackupDir, OFFSITE_RCLONE_REMOTE: 'encrypted-test:doma-tech', RCLONE_BIN: downloadMock, RCLONE_TEST_REMOTE_DIR: remoteDir },
