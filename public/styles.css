@@ -474,3 +474,5 @@ body>*{position:relative;z-index:1}
  .header-cta{display:inline-flex;align-items:center}
  .nav{z-index:110}
 }
+
+body.menu-open{overflow:hidden}
