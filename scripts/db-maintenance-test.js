@@ -23,7 +23,7 @@ async function main() {
   `);
   db.close();
 
-  const env = { ...process.env, DATA_DIR: dataDir, BACKUP_DIR: backupDir };
+  const env = { ...process.env, DATA_DIR: dataDir, BACKUP_DIR: backupDir, BACKUP_RETENTION_COUNT: '2' };
   try {
     const backupRun = spawnSync(process.execPath, [path.join(__dirname, 'backup-db.js')], { env, encoding: 'utf8' });
     assert.equal(backupRun.status, 0, backupRun.stderr || backupRun.stdout);
@@ -48,7 +48,21 @@ async function main() {
 
     const denied = spawnSync(process.execPath, [path.join(__dirname, 'restore-db.js'), filename], { env, encoding: 'utf8' });
     assert.notEqual(denied.status, 0, 'Restore must require explicit opt-in');
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy and opt-in guard.');
+
+    for (let index = 0; index < 4; index += 1) {
+      const rotated = spawnSync(process.execPath, [path.join(__dirname, 'backup-db.js')], { env, encoding: 'utf8' });
+      assert.equal(rotated.status, 0, rotated.stderr || rotated.stdout);
+    }
+    const rotatedEntries = await fs.readdir(backupDir);
+    const validBackups = rotatedEntries.filter(name => /^doma-tech-\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z-[a-f0-9]{8}\\.sqlite$/.test(name));
+    assert.equal(validBackups.length, 2, 'Rotation must retain exactly the configured number of verified backups');
+    for (const backupName of validBackups) {
+      const manifest = JSON.parse(await fs.readFile(path.join(backupDir, backupName + '.json'), 'utf8'));
+      assert.equal(manifest.file, backupName);
+      assert.equal(manifest.integrity, 'ok');
+      assert.match(manifest.sha256, /^[a-f0-9]{64}$/);
+    }
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard and retention rotation.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
