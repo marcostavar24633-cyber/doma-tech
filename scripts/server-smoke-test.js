@@ -167,6 +167,13 @@ async function main() {
   });
   assert.equal(oversizedUpload.status, 400, 'Upload must reject files larger than 5 MiB');
 
+  const invalidCategoryProduct = await request('/api/admin/products', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name:'Invalid category product', category:'__missing_category__', price:1000, description:'Must be rejected' })
+  });
+  assert.equal(invalidCategoryProduct.status, 400, 'Products must reference an existing category');
+
   const tempRoot = await tempRootPromise;
   const uploadsDir = path.join(tempRoot, 'uploads');
   const uploadPng = async () => {
