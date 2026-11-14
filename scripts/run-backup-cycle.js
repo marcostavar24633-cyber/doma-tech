@@ -5,6 +5,7 @@ require('dotenv').config();
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { notify } = require('./backup-notifier');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.resolve(process.env.DATA_DIR || path.join(root, 'data'));
@@ -85,6 +86,9 @@ async function main() {
       console.error('Could not write backup operation log:', logError.message);
     });
     console.error(JSON.stringify(entry));
+    await notify({ status: 'critical', ...entry }).catch(error => {
+      console.error('Backup notification failed:', error.message);
+    });
     process.exitCode = 1;
   }
 }
