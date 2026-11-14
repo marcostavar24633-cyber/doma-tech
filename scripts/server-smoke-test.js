@@ -196,7 +196,12 @@ async function main() {
   assert.equal(afterLogout.status, 401);
 
   const adminPage = await request('/admin');
-  assert.equal(adminPage.status, 404, 'Missing admin UI must be reported honestly, not served as if implemented');
+  assert.equal(adminPage.status, 200, 'Admin interface should be served');
+  assert.equal(adminPage.headers.get('cache-control'), 'no-store');
+  assert.match(await adminPage.text(), /Панель управления/);
+  const adminScript = await request('/admin.js');
+  assert.equal(adminScript.status, 200);
+  assert.match(await adminScript.text(), /x-csrf-token/);
 
   console.log('Smoke tests passed: health, catalog, order validation, admin auth, session cookie, CSRF, product CRUD, logout, and explicit missing-admin response.');
 }
