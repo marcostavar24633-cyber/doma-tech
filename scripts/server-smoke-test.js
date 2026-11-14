@@ -227,7 +227,7 @@ async function main() {
   assert.equal(invalidLocalImage.status, 400, 'Product API must reject unsafe local image paths');
 
   const rateLimitedUploads = [];
-  for (let index = 0; index < 20; index += 1) rateLimitedUploads.push(await uploadPng());
+  for (let index = 0; index < 15; index += 1) rateLimitedUploads.push(await uploadPng());
   const blockedUploadForm = new FormData();
   blockedUploadForm.append('image', new Blob([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])], { type: 'image/png' }), 'blocked.png');
   const blockedUpload = await request('/api/admin/upload', {
