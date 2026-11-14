@@ -32,7 +32,7 @@
   function renderProducts() {
     const root = $('#product-list');
     if (!state.products.length) { root.innerHTML = '<p class="muted">В каталоге пока нет товаров. Добавьте первую позицию.</p>'; return; }
-    root.innerHTML = state.products.map((p) => '<article class="item"><img class="thumb" src="' + esc(p.image || '/favicon.svg') + '" alt="" loading="lazy""><div><h3>' + esc(p.name) + '</h3><p>' + esc(p.category) + ' · ' + esc(money(p.price)) + (p.active ? '' : ' · скрыт') + '</p></div><div class="item-actions"><button class="small-btn" data-edit="' + Number(p.id) + '" type="button">Изменить</button><button class="small-btn danger" data-delete="' + Number(p.id) + '" type="button">Удалить</button></div></article>').join('');
+    root.innerHTML = state.products.map((p) => '<article class="item"><img class="thumb" src="' + esc(p.image || '/favicon.svg') + '" alt="" loading="lazy""><div><h3>' + esc(p.name) + '</h3><p>' + esc(p.category) + ' · ' + esc(money(p.price)) + (p.active ? '' : ' · скрыт') + '</p></div><div class="item-actions"><button class="small-btn" data-edit="' + Number(p.id) + '" type="button">Изменить</button><button class="small-btn" data-product-toggle="' + Number(p.id) + '" type="button">'+(p.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-delete="' + Number(p.id) + '" type="button">Удалить</button></div></article>').join('');
   }
   function renderOrders() {
     const root = $('#order-list');
@@ -43,7 +43,7 @@
   function renderCategories() {
     const root = $('#category-list');
     if (!state.categories.length) { root.innerHTML = '<p class="muted">Категорий пока нет.</p>'; return; }
-    root.innerHTML = state.categories.map((c) => '<article class="item category-item"><div class="category-symbol">#</div><div><h3>' + esc(c.name) + '</h3><p>' + esc(c.slug) + ' · порядок: ' + Number(c.sort_order) + (c.active ? '' : ' · скрыта') + '</p></div><div class="item-actions"><button class="small-btn" data-category-edit="' + Number(c.id) + '" type="button">Изменить</button><button class="small-btn danger" data-category-delete="' + Number(c.id) + '" type="button">Удалить</button></div></article>').join('');
+    root.innerHTML = state.categories.map((c) => '<article class="item category-item"><div class="category-symbol">#</div><div><h3>' + esc(c.name) + '</h3><p>' + esc(c.slug) + ' · порядок: ' + Number(c.sort_order) + (c.active ? '' : ' · скрыта') + '</p></div><div class="item-actions"><button class="small-btn" data-category-edit="' + Number(c.id) + '" type="button">Изменить</button><button class="small-btn" data-category-toggle="' + Number(c.id) + '" type="button">'+(c.active ? 'Скрыть' : 'Опубликовать')+'</button><button class="small-btn danger" data-category-delete="' + Number(c.id) + '" type="button">Удалить</button></div></article>').join('');
   }
   function fillSettings() {
     const form = $('#settings-form');
@@ -87,7 +87,16 @@
   $('#cancel-dialog').addEventListener('click', () => productDialog.close());
   $('#product-list').addEventListener('click', async (event) => {
     const edit = event.target.closest('[data-edit]'); const remove = event.target.closest('[data-delete]');
+    const toggle = event.target.closest('[data-product-toggle]');
     if (edit) { const product = state.products.find((item) => item.id === Number(edit.dataset.edit)); if (product) openProduct(product); }
+    if (toggle) {
+      const product = state.products.find((item) => item.id === Number(toggle.dataset.productToggle));
+      if (!product) return;
+      try {
+        await api('/api/admin/products/' + product.id + '/visibility', {method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({active:!Boolean(product.active)})});
+        await loadAll(); notice(product.active ? 'Товар скрыт с витрины' : 'Товар опубликован');
+      } catch (error) { notice(error.message,true); }
+    }
     if (remove) {
       const id = Number(remove.dataset.delete); const product = state.products.find((item) => item.id === id);
       if (!product || !confirm('Удалить товар «' + product.name + '»?')) return;
@@ -126,6 +135,15 @@
   });
   $('#category-list').addEventListener('click', async (event) => {
     const edit = event.target.closest('[data-category-edit]'); const remove = event.target.closest('[data-category-delete]');
+    const toggle = event.target.closest('[data-category-toggle]');
+    if (toggle) {
+      const category = state.categories.find((item) => item.id === Number(toggle.dataset.categoryToggle));
+      if (!category) return;
+      try {
+        await api('/api/admin/categories/' + category.id, {method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({name:category.name,slug:category.slug,sort_order:Number(category.sort_order),active:!Boolean(category.active)})});
+        await loadAll(); notice(category.active ? 'Категория скрыта' : 'Категория опубликована');
+      } catch (error) { notice(error.message,true); }
+    }
     if (edit) {
       const category = state.categories.find((item) => item.id === Number(edit.dataset.categoryEdit));
       if (!category) return;
