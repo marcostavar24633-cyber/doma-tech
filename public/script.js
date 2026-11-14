@@ -67,7 +67,7 @@ document.getElementById('finderForm')?.addEventListener('submit',event=>{
   event.preventDefault();
   const values=Object.fromEntries(new FormData(event.currentTarget).entries());
   const labels={type:'Тип установки',width:'Ширина',family:'Состав семьи',budget:'Бюджет'};
-  currentSelection='DOMA TECH — мой профиль подбора\\n\\n'+Object.entries(values).map(([key,value])=>labels[key]+': '+value).join('\\n')+'\\n\\nПеред покупкой проверьте точные габариты ниши, подключение, уровень шума, расход воды, гарантию и наличие у продавца.';
+  currentSelection='DOMA TECH — мой профиль подбора\n\n'+Object.entries(values).map(([key,value])=>labels[key]+': '+value).join('\n')+'\n\nПеред покупкой проверьте точные габариты ниши, подключение, уровень шума, расход воды, гарантию и наличие у продавца.';
   const output=document.getElementById('finderResult');
   if(output){
     output.hidden=false;
