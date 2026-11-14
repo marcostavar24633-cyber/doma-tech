@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
   sort_order INTEGER NOT NULL DEFAULT 0,
+  description TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -76,6 +77,9 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `);
+
+const categoryColumns = db.prepare('PRAGMA table_info(categories)').all().map(column => column.name);
+if (!categoryColumns.includes('description')) db.exec("ALTER TABLE categories ADD COLUMN description TEXT NOT NULL DEFAULT ''");
 
 const adminUsername = process.env.ADMIN_USERNAME || 'admin';
 const adminPassword = process.env.ADMIN_PASSWORD;
@@ -345,7 +349,7 @@ app.get('/api/site-config', (req,res) => {
   const rows = db.prepare('SELECT key,value FROM site_settings').all();
   const settings = Object.fromEntries(rows.map(row => [row.key, row.value]));
   res.set('Cache-Control', 'no-store');
-  res.json({ settings, categories: db.prepare('SELECT id,name,slug,sort_order FROM categories WHERE active=1 ORDER BY sort_order,name').all() });
+  res.json({ settings, categories: db.prepare('SELECT id,name,slug,sort_order,description FROM categories WHERE active=1 ORDER BY sort_order,name').all() });
 });
 app.get('/api/admin/categories', requireAdmin, (req,res) => {
   res.json(db.prepare('SELECT * FROM categories ORDER BY sort_order,name').all());
@@ -354,9 +358,10 @@ app.post('/api/admin/categories', requireAdmin, csrfCheck, (req,res) => {
   const name = cleanText(req.body.name, 60);
   const slug = slugify(req.body.slug || name);
   const sortOrder = Number(req.body.sort_order || 0);
+  const description = cleanText(req.body.description, 500);
   if (!name || !slug || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) return res.status(400).json({error:'Проверьте название, URL-идентификатор и порядок категории'});
   try {
-    const result = db.prepare('INSERT INTO categories(name,slug,sort_order) VALUES(?,?,?)').run(name,slug,sortOrder);
+    const result = db.prepare('INSERT INTO categories(name,slug,sort_order,description) VALUES(?,?,?,?)').run(name,slug,sortOrder,description);
     res.status(201).json(db.prepare('SELECT * FROM categories WHERE id=?').get(result.lastInsertRowid));
   } catch (error) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({error:'Категория с таким названием или URL уже существует'});
@@ -364,10 +369,10 @@ app.post('/api/admin/categories', requireAdmin, csrfCheck, (req,res) => {
   }
 });
 app.put('/api/admin/categories/:id', requireAdmin, csrfCheck, (req,res) => {
-  const id = Number(req.params.id), name = cleanText(req.body.name,60), slug = slugify(req.body.slug || name), sortOrder = Number(req.body.sort_order || 0);
+  const id = Number(req.params.id), name = cleanText(req.body.name,60), slug = slugify(req.body.slug || name), sortOrder = Number(req.body.sort_order || 0), description = cleanText(req.body.description,500);
   if (!Number.isSafeInteger(id) || id <= 0 || !name || !slug || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) return res.status(400).json({error:'Некорректные данные категории'});
   try {
-    const result = db.prepare('UPDATE categories SET name=?,slug=?,sort_order=?,active=? WHERE id=?').run(name,slug,sortOrder,req.body.active === false ? 0 : 1,id);
+    const result = db.prepare('UPDATE categories SET name=?,slug=?,sort_order=?,description=?,active=? WHERE id=?').run(name,slug,sortOrder,description,req.body.active === false ? 0 : 1,id);
     if (!result.changes) return res.status(404).json({error:'Категория не найдена'});
     res.json(db.prepare('SELECT * FROM categories WHERE id=?').get(id));
   } catch (error) {
