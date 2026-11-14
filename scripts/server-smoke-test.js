@@ -190,7 +190,7 @@ async function main() {
   const categoryCreate = await request('/api/admin/categories', {
     method: 'POST',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Встраиваемые', slug: 'vstraivaemye', sort_order: 1 })
+    body: JSON.stringify({ name: 'Built-in', slug: 'built-in', sort_order: 1 })
   });
   assert.equal(categoryCreate.status, 201);
   const category = await categoryCreate.json();
