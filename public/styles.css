@@ -185,3 +185,17 @@ html{scroll-padding-top:18px}
  .dishwasher-art,.category-card,.category-card:after,.category-card .appliance,.market-card,.market-photo,.button,.header-cta{transition:none!important}
  .hero-visual:hover .dishwasher-art,.category-card:hover .appliance,.market-card:hover,.market-card:hover .market-photo{transform:none}
 }
+
+
+/* Accessibility pass: readable secondary text and comfortable touch targets */
+.brand small{color:#65747a}
+.category-num{color:#66747a}
+.market-info p,.market-disclaimer,.filter-result,.comparison-heading>p,.comparison-note,.model-details-body dt{color:#56666d}
+.form-hint{color:#66747a}
+.menu-toggle{min-width:44px;min-height:44px;display:grid;place-items:center}
+.button,.filter-reset{min-height:44px}
+.nav a{padding-block:8px}
+@media(max-width:650px){
+  .nav a{min-height:44px;display:flex;align-items:center}
+  .header{gap:10px}
+}
