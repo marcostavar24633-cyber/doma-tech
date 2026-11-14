@@ -75,7 +75,7 @@
       <div class="dialog-head"><div><p class="eyebrow">КАРТОЧКА КАТАЛОГА</p><h2 id="dialog-title">Новый товар</h2></div><button id="close-dialog" class="icon-button" type="button" aria-label="Закрыть">×</button></div>
       <input name="id" type="hidden">
       <label>Название<input name="name" required maxlength="120"></label>
-      <div class="two-col"><label>Категория<input name="category" required maxlength="60" placeholder="Встраиваемая"></label><label>Цена, ₽<input name="price" type="number" min="0" max="100000000" step="1"></label></div>
+      <div class="two-col"><label>Категория<select name="category" required><option value="">Выберите категорию</option></select></label><label>Цена, ₽<input name="price" type="number" min="0" max="100000000" step="1"></label></div>
       <label>Описание<textarea name="description" rows="3" maxlength="700"></textarea></label>
       <label>Ссылка на изображение<input name="image" maxlength="500" placeholder="https://… или /uploads/…"></label>
       <label>Загрузить изображение<input name="file" type="file" accept="image/jpeg,image/png,image/webp,image/avif"></label>
