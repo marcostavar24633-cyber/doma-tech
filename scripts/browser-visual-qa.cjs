@@ -52,6 +52,9 @@ async function main() {
       fallback: Boolean(image.closest('.market-visual')?.classList.contains('image-fallback'))
     })));
     assert.ok(photoStates.every(image => image.loaded || image.fallback), 'Unavailable product photos must show the designed fallback');
+    const mid60Card = desktop.locator('.market-card').filter({ hasText: 'MID60S050' });
+    assert.equal(await mid60Card.locator('.market-visual.image-fallback').count(), 1, 'MID60S050 must use the intentional product illustration');
+    assert.ok(await mid60Card.locator('.image-fallback-label').isVisible(), 'The illustrative product image must be labelled');
     console.log('Product image states:', JSON.stringify(photoStates));
 
     const desktopOverflow = await desktop.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
