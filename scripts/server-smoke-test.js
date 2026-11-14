@@ -233,14 +233,26 @@ async function main() {
   const categoryProduct = await request('/api/admin/products', {
     method: 'POST',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Category-linked test item', category: 'Built-in', price: 100 })
+    body: JSON.stringify({ name: 'Category-linked test item', category: 'Built-in', price: 100, description: 'Test product description', meta_title: 'Test product SEO title', meta_description: 'Test product SEO description' })
   });
   assert.equal(categoryProduct.status, 201);
+  const categoryProductData = await categoryProduct.json();
+  assert.ok(categoryProductData.slug.startsWith('category-linked-test-item-'));
+  assert.equal(categoryProductData.meta_title, 'Test product SEO title');
+  const productPage = await request('/product/' + categoryProductData.slug);
+  assert.equal(productPage.status, 200);
+  const productHtml = await productPage.text();
+  assert.ok(productHtml.includes('<title>Test product SEO title</title>'));
+  assert.ok(productHtml.includes('name="description" content="Test product SEO description"'));
+  assert.ok(productHtml.includes('"@type":"Product"'));
+  assert.ok(productHtml.includes('Главная'));
+  const missingProductPage = await request('/product/not-a-real-product');
+  assert.equal(missingProductPage.status, 404);
   const categoryDeleteBlocked = await request('/api/admin/categories/' + category.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(categoryDeleteBlocked.status, 409, 'Category in use by products must not be deleted');
-  const removeCategoryProduct = await request('/api/admin/products/' + (await categoryProduct.json()).id, {
+  const removeCategoryProduct = await request('/api/admin/products/' + categoryProductData.id, {
     method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
   });
   assert.equal(removeCategoryProduct.status, 200);
@@ -264,6 +276,7 @@ async function main() {
   const sitemapXml = await sitemap.text();
   assert.ok(sitemapXml.includes('https://example.test/'));
   assert.ok(sitemapXml.includes('https://example.test/catalog/built-in'));
+  assert.ok(sitemapXml.includes('https://example.test/product/' + categoryProductData.slug));
   const robots = await request('/robots.txt');
   assert.equal(robots.status, 200);
   assert.ok((await robots.text()).includes('Sitemap: https://example.test/sitemap.xml'));
