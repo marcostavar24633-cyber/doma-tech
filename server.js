@@ -30,6 +30,7 @@ if (process.env.NODE_ENV === 'production') {
 const db = new Database(path.join(DATA_DIR, 'doma-tech.sqlite'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+db.pragma('busy_timeout = 5000');
 db.exec(`
 CREATE TABLE IF NOT EXISTS sessions (
   sid TEXT PRIMARY KEY,
@@ -267,6 +268,7 @@ function validProduct(body) {
   const metaDescription = cleanText(body.meta_description, 300);
   const price = body.price === '' || body.price === null || body.price === undefined ? null : Number(body.price);
   if (!name || !category) return { error: 'Укажите название и категорию товара' };
+  if (!db.prepare('SELECT 1 FROM categories WHERE name=?').get(category)) return { error: 'Выберите существующую категорию' };
   if (price !== null && (!Number.isSafeInteger(price) || price < 0 || price > 100000000)) return { error: 'Некорректная цена' };
   if (image.startsWith('/uploads/') && !localUploadPath(image)) return { error: 'Некорректный путь локального изображения' };
   if (image && !image.startsWith('/uploads/') && !/^https:\/\/.+/i.test(image)) return { error: 'Изображение должно быть HTTPS-ссылкой или файлом из /uploads/' };
@@ -525,10 +527,14 @@ app.get('/api/admin/products', requireAdmin, (req,res)=>{
 app.post('/api/admin/products', requireAdmin, csrfCheck, (req,res)=>{
   const checked=validProduct(req.body); if(checked.error) return res.status(400).json({error:checked.error});
   const p=checked.value;
-  const result = db.prepare('INSERT INTO products(name,category,price,description,image,meta_title,meta_description) VALUES(?,?,?,?,?,?,?)').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription);
-  const slug = (slugify(p.name) || 'product') + '-' + result.lastInsertRowid;
-  db.prepare('UPDATE products SET slug=? WHERE id=?').run(slug,result.lastInsertRowid);
-  res.status(201).json(db.prepare('SELECT * FROM products WHERE id=?').get(result.lastInsertRowid));
+  const createProduct = db.transaction(() => {
+    const result = db.prepare('INSERT INTO products(name,category,price,description,image,meta_title,meta_description) VALUES(?,?,?,?,?,?,?)').run(p.name,p.category,p.price,p.description,p.image,p.metaTitle,p.metaDescription);
+    const slug = (slugify(p.name) || 'product') + '-' + result.lastInsertRowid;
+    db.prepare('UPDATE products SET slug=? WHERE id=?').run(slug,result.lastInsertRowid);
+    return db.prepare('SELECT * FROM products WHERE id=?').get(result.lastInsertRowid);
+  });
+  const created = createProduct();
+  res.status(201).json(created);
 });
 app.put('/api/admin/products/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id); if(!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({error:'Некорректный ID'});
