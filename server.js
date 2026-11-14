@@ -85,7 +85,6 @@ const productColumns = db.prepare('PRAGMA table_info(products)').all().map(colum
 if (!productColumns.includes('slug')) db.exec("ALTER TABLE products ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
 if (!productColumns.includes('meta_title')) db.exec("ALTER TABLE products ADD COLUMN meta_title TEXT NOT NULL DEFAULT ''");
 if (!productColumns.includes('meta_description')) db.exec("ALTER TABLE products ADD COLUMN meta_description TEXT NOT NULL DEFAULT ''");
-const slugify = value => cleanText(value, 120).toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9а-яё]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80);
 const existingProducts = db.prepare("SELECT id,name FROM products WHERE slug='' OR slug IS NULL").all();
 const updateLegacyProductSlug = db.prepare('UPDATE products SET slug=? WHERE id=?');
 for (const product of existingProducts) updateLegacyProductSlug.run((slugify(product.name) || 'product') + '-' + product.id, product.id);
