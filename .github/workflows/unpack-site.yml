@@ -1,10 +1,8 @@
 name: Unpack DOMA TECH site
 
+# Запуск только вручную после проверки содержимого DOMA_TECH_server_v3.zip.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "DOMA_TECH_server_v3.zip"
 
 permissions:
   contents: write
@@ -18,6 +16,7 @@ jobs:
 
       - name: Unpack site archive
         run: |
+          test -f DOMA_TECH_server_v3.zip
           mkdir -p extracted
           unzip -q DOMA_TECH_server_v3.zip -d extracted
           test -d extracted/doma_tech_server
@@ -27,7 +26,7 @@ jobs:
       - name: Commit unpacked site files
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+users.noreply.github.com"
           git add -A
           git commit -m "Unpack DOMA TECH site files" || echo "No changes to commit"
           git push
