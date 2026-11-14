@@ -86,7 +86,20 @@ async function main() {
         const rect = node.getBoundingClientRect();
         return { tag: node.tagName.toLowerCase(), id: node.id, className: typeof node.className === 'string' ? node.className : '', left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
       }).filter(item => item.right > width + 1 || item.left < -1).sort((a, b) => b.right - a.right).slice(0, 12);
-      return { innerWidth: window.innerWidth, clientWidth: width, scrollWidth: document.documentElement.scrollWidth, offenders };
+      const scroller = document.querySelector('.comparison-scroll');
+      const block = document.querySelector('.comparison-block');
+      const describe = node => {
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, cssWidth: style.width, maxWidth: style.maxWidth, minWidth: style.minWidth, overflowX: style.overflowX, display: style.display };
+      };
+      return {
+        innerWidth: window.innerWidth, clientWidth: width, scrollWidth: document.documentElement.scrollWidth,
+        media700: matchMedia('(max-width:700px)').matches,
+        section: describe(document.querySelector('#market-examples')),
+        block: describe(block), scroller: describe(scroller), offenders
+      };
     });
     console.log('Mobile overflow diagnostics:', JSON.stringify(mobileMetrics));
     assert.ok(mobileMetrics.scrollWidth <= mobileMetrics.clientWidth, 'Mobile layout must not overflow horizontally');
