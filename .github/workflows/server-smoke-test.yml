@@ -17,6 +17,7 @@ on:
       - 'scripts/restore-db.js'
       - 'scripts/db-maintenance-test.js'
       - 'deploy/systemd/**'
+      - 'deploy/DR-RECOVERY.md'
       - '.github/workflows/server-smoke-test.yml'
   pull_request:
     paths:
@@ -33,6 +34,7 @@ on:
       - 'scripts/restore-db.js'
       - 'scripts/db-maintenance-test.js'
       - 'deploy/systemd/**'
+      - 'deploy/DR-RECOVERY.md'
       - '.github/workflows/server-smoke-test.yml'
   workflow_dispatch:
 
