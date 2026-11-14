@@ -485,3 +485,19 @@ body.menu-open{overflow:hidden}
   .comparison-scroll{width:100%;min-width:0;max-width:100%;overflow-x:auto}
   .comparison-table{min-width:720px}
 }
+
+/* Explicit viewport-bounded comparison scroller on narrow screens */
+@media(max-width:700px){
+  #market-examples .comparison-block{
+    width:calc(100vw - 44px);
+    max-width:calc(100vw - 44px);
+    min-width:0;
+    overflow:hidden;
+  }
+  #market-examples .comparison-scroll{
+    width:calc(100vw - 80px);
+    max-width:calc(100vw - 80px);
+    min-width:0;
+    overflow-x:auto;
+  }
+}
