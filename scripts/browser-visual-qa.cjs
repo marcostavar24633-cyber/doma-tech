@@ -14,6 +14,7 @@ async function main() {
   });
   const browser = await chromium.launch({ headless: true });
   const errors = [];
+  const unexpectedResponses = [];
   const waitForServer = async () => {
     for (let attempt = 0; attempt < 40; attempt += 1) {
       try {
@@ -29,6 +30,12 @@ async function main() {
     await waitForServer();
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
     desktop.on('pageerror', error => errors.push('desktop pageerror: ' + error.message));
+    desktop.on('response', response => {
+      const url = new URL(response.url());
+      if (url.hostname === '127.0.0.1' && response.status() >= 400 && url.pathname !== '/api/site-config') {
+        unexpectedResponses.push('desktop ' + response.status() + ' ' + url.pathname);
+      }
+    });
     desktop.on('console', message => {
       const source = message.location().url || '';
       if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('desktop console: ' + message.text());
@@ -53,11 +60,21 @@ async function main() {
     assert.match(profile, /DOMA TECH — мой профиль подбора/);
     assert.match(profile, /Тип установки:/);
 
-    await desktop.evaluate(() => window.scrollTo(0, 0));
+    await desktop.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await desktop.waitForFunction(() => window.scrollY === 0);
     await desktop.screenshot({ path: 'artifacts/desktop-1440.png', fullPage: true, animations: 'disabled' });
 
-    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true });
     mobile.on('pageerror', error => errors.push('mobile pageerror: ' + error.message));
+    mobile.on('response', response => {
+      const url = new URL(response.url());
+      if (url.hostname === '127.0.0.1' && response.status() >= 400 && url.pathname !== '/api/site-config') {
+        unexpectedResponses.push('mobile ' + response.status() + ' ' + url.pathname);
+      }
+    });
     mobile.on('console', message => {
       const source = message.location().url || '';
       if (message.type() === 'error' && source.startsWith('http://127.0.0.1:4173/')) errors.push('mobile console: ' + message.text());
@@ -77,10 +94,20 @@ async function main() {
     assert.equal(await menuButton.getAttribute('aria-expanded'), 'false', 'Selecting a menu item must close the drawer');
     assert.equal(await mobile.locator('body').evaluate(node => node.classList.contains('menu-open')), false, 'Closing the drawer must restore page scrolling');
 
-    await mobile.evaluate(() => window.scrollTo(0, 0));
+    await mobile.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await mobile.waitForFunction(() => window.scrollY === 0);
     await mobile.screenshot({ path: 'artifacts/mobile-390.png', fullPage: true, animations: 'disabled' });
 
     assert.deepEqual(errors, [], 'No uncaught browser JavaScript errors should occur');
+    assert.deepEqual(unexpectedResponses, [], 'No unexpected same-origin HTTP errors should occur');
+    console.log('Browser viewport metrics:', await mobile.evaluate(() => JSON.stringify({
+      innerWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      devicePixelRatio: window.devicePixelRatio
+    })));
     console.log('Browser QA passed: desktop layout, mobile layout, menu, local selection, download, screenshots.');
   } finally {
     await browser.close();
