@@ -142,6 +142,25 @@ async function main() {
       'Disaster recovery must preserve a pre-restore safety copy');
 
 
+    // Clean-server recovery: install a verified backup when no live SQLite file exists.
+    const cleanDataDir = path.join(temp, 'clean-server-data');
+    const cleanBackupDir = path.join(temp, 'clean-server-backups');
+    await fs.mkdir(cleanDataDir, { recursive: true });
+    await fs.mkdir(cleanBackupDir, { recursive: true });
+    await fs.copyFile(downloaded, path.join(cleanBackupDir, validBackups[0]));
+    await fs.copyFile(downloaded + '.json', path.join(cleanBackupDir, validBackups[0] + '.json'));
+    const cleanRestore = spawnSync(process.execPath, [path.join(__dirname, 'restore-db.js'), validBackups[0]], {
+      env: { ...env, DATA_DIR: cleanDataDir, BACKUP_DIR: cleanBackupDir, ALLOW_DB_RESTORE: 'true' },
+      encoding: 'utf8'
+    });
+    assert.equal(cleanRestore.status, 0, cleanRestore.stderr || cleanRestore.stdout);
+    const cleanDbPath = path.join(cleanDataDir, 'doma-tech.sqlite');
+    const cleanRestoredDb = new Database(cleanDbPath, { readonly: true });
+    assert.equal(cleanRestoredDb.pragma('integrity_check', { simple: true }), 'ok');
+    assert.equal(cleanRestoredDb.prepare('SELECT name FROM products').get().name, 'Before backup');
+    cleanRestoredDb.close();
+    assert.ok(cleanRestore.stdout.includes('No existing database was present'));
+
     const cycleDataDir = path.join(temp, 'cycle-data');
     const cycleBackupDir = path.join(temp, 'cycle-backups');
     await fs.mkdir(cycleDataDir, { recursive: true });
@@ -181,7 +200,7 @@ async function main() {
     assert.equal(JSON.parse(staleHealthRun.stdout).status, 'critical');
 
 
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download and isolated disaster-recovery restore validation, scheduled backup cycle and notification formatting/no-config behavior.');
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download, isolated disaster-recovery restore and clean-server initial restore validation, scheduled backup cycle and notification formatting/no-config behavior.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
