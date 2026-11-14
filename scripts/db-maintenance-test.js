@@ -104,7 +104,30 @@ async function main() {
     assert.equal(await fs.readFile(downloaded).then(data => data.length), await fs.readFile(path.join(remoteDir, validBackups[0])).then(data => data.length));
     assert.equal(JSON.parse(await fs.readFile(downloaded + '.json', 'utf8')).file, validBackups[0]);
 
-    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification and offsite download validation.');
+    const cycleDataDir = path.join(temp, 'cycle-data');
+    const cycleBackupDir = path.join(temp, 'cycle-backups');
+    await fs.mkdir(cycleDataDir, { recursive: true });
+    const cycleDbPath = path.join(cycleDataDir, 'doma-tech.sqlite');
+    const cycleDb = new Database(cycleDbPath);
+    cycleDb.exec(`
+      CREATE TABLE admins (id INTEGER PRIMARY KEY, username TEXT, password_hash TEXT);
+      CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE sessions (sid TEXT PRIMARY KEY, sess TEXT, expires_at INTEGER);
+    `);
+    cycleDb.close();
+    const cycleRun = spawnSync(process.execPath, [path.join(__dirname, 'run-backup-cycle.js')], {
+      env: { ...process.env, DATA_DIR: cycleDataDir, BACKUP_DIR: cycleBackupDir, BACKUP_RETENTION_COUNT: '2', OFFSITE_RCLONE_REMOTE: '' },
+      encoding: 'utf8'
+    });
+    assert.equal(cycleRun.status, 0, cycleRun.stderr || cycleRun.stdout);
+    const cycleLog = (await fs.readFile(path.join(cycleDataDir, 'backup-operations.jsonl'), 'utf8')).trim().split('\\n').map(line => JSON.parse(line));
+    assert.equal(cycleLog.length, 1);
+    assert.equal(cycleLog[0].status, 'success');
+    assert.equal(cycleLog[0].offsite, 'skipped');
+    assert.ok(cycleLog[0].backupFile);
+
+    console.log('Database maintenance tests passed: backup, SHA-256 manifest, integrity validation, restore, safety copy, opt-in guard, retention rotation, offsite upload verification, offsite download validation and scheduled backup cycle.');
   } finally {
     await fs.rm(temp, { recursive: true, force: true });
   }
