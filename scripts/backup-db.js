@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const Database = require('better-sqlite3');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
@@ -103,7 +105,7 @@ async function main() {
     sha256: await sha256(destination),
     integrity: 'ok'
   };
-  await fs.writeFile(`${destination}.json`, JSON.stringify(manifest, null, 2) + '\\n', { mode: 0o600, flag: 'wx' });
+  await fs.writeFile(`${destination}.json`, JSON.stringify(manifest, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
 
   // Re-read the just-written manifest and verify the backup before any cleanup.
   if (!(await isVerifiedBackup(filename))) throw new Error('New backup failed final verification; old backups were left untouched.');
