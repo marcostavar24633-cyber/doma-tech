@@ -64,6 +64,8 @@
     categorySelect.value = product ? product.category : '';
     productForm.elements.price.value = product && product.price != null ? product.price : '';
     productForm.elements.description.value = product ? product.description : '';
+    productForm.elements.meta_title.value = product ? product.meta_title || '' : '';
+    productForm.elements.meta_description.value = product ? product.meta_description || '' : '';
     productForm.elements.image.value = product ? product.image : '';
     $('#dialog-title').textContent = product ? 'Изменить товар' : 'Новый товар';
     productDialog.showModal();
@@ -113,7 +115,7 @@
         const upload = new FormData(); upload.append('image', file);
         const result = await api('/api/admin/upload', {method:'POST',body:upload}); image = result.url;
       }
-      const payload = {name:form.get('name'),category:form.get('category'),price:form.get('price'),description:form.get('description'),image};
+      const payload = {name:form.get('name'),category:form.get('category'),price:form.get('price'),description:form.get('description'),image,meta_title:form.get('meta_title'),meta_description:form.get('meta_description')};
       const id = form.get('id');
       await api(id ? '/api/admin/products/' + Number(id) : '/api/admin/products', {method:id?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
       productDialog.close(); await loadAll(); notice(id ? 'Изменения сохранены' : 'Товар добавлен');
