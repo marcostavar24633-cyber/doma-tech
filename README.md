@@ -110,3 +110,36 @@ ALLOW_DB_RESTORE=true npm run db:restore -- doma-tech-ИМЯ_КОПИИ.sqlite
 ```
 
 После восстановления перезапустите приложение и проверьте его работу. Для production используйте отдельное зашифрованное хранилище, защищённые credentials rclone и регулярные тестовые восстановления.
+
+## Автоматический цикл резервирования
+
+Одна команда выполняет локальную резервную копию, проверяет наличие манифеста и при настроенном `OFFSITE_RCLONE_REMOTE` отправляет копию во внешнее хранилище с проверкой чтением обратно:
+
+```bash
+npm run db:backup-cycle
+```
+
+Результат каждого запуска записывается в `data/backup-operations.jsonl`. При ошибке цикла команда завершается с ненулевым кодом. Если внешний remote не настроен, выполняется только локальная копия. Чтобы требовать обязательную внешнюю копию, задайте `OFFSITE_REQUIRED=true`.
+
+### Ежедневный запуск через systemd (Linux)
+
+В репозитории есть шаблоны:
+
+- `deploy/systemd/doma-tech-backup.service`
+- `deploy/systemd/doma-tech-backup.timer`
+
+Они рассчитаны на установку проекта в `/opt/doma-tech`, системного пользователя и группы `doma-tech`, Node.js/npm в `/usr/bin`, данные в `/opt/doma-tech/data` и резервные копии в `/opt/doma-tech/backups`. Если фактические пути отличаются, отредактируйте unit-файлы до установки. Установите права на каталоги и `.env`, настройте rclone для того же системного пользователя и проверьте ручной запуск.
+
+Пример установки после адаптации путей:
+
+```bash
+sudo install -m 0644 deploy/systemd/doma-tech-backup.service /etc/systemd/system/
+sudo install -m 0644 deploy/systemd/doma-tech-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now doma-tech-backup.timer
+systemctl list-timers doma-tech-backup.timer
+```
+
+Таймер запланирован ежедневно на 03:15 по локальному времени сервера с дополнительной случайной задержкой до 15 минут и догоняющим запуском после простоя. Проверяйте историю через `journalctl -u doma-tech-backup.service` и журнал `data/backup-operations.jsonl`.
+
+**Важно:** файлы systemd — шаблоны, они не активируются самим GitHub-коммитом. Установка и настройка на реальном сервере требуют доступа администратора. Не запускайте этот timer на GitHub Pages: Pages не исполняет серверные Node.js процессы.
