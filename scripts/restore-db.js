@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const Database = require('better-sqlite3');
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
