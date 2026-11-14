@@ -219,6 +219,32 @@ async function main() {
   });
   assert.equal(unsafeCleanup.status, 400, 'Cleanup must reject paths outside the upload directory');
 
+  const invalidLocalImage = await request('/api/admin/products', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Unsafe image path', category: 'Images', image: '/uploads/../../server.js' })
+  });
+  assert.equal(invalidLocalImage.status, 400, 'Product API must reject unsafe local image paths');
+
+  const rateLimitedUploads = [];
+  for (let index = 0; index < 20; index += 1) rateLimitedUploads.push(await uploadPng());
+  const blockedUploadForm = new FormData();
+  blockedUploadForm.append('image', new Blob([Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])], { type: 'image/png' }), 'blocked.png');
+  const blockedUpload = await request('/api/admin/upload', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken },
+    body: blockedUploadForm
+  });
+  assert.equal(blockedUpload.status, 429, 'Upload endpoint must enforce a per-window rate limit');
+  for (const url of rateLimitedUploads) {
+    const cleanup = await request('/api/admin/upload/cleanup', {
+      method: 'POST',
+      headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    assert.equal(cleanup.status, 200);
+  }
+
   const invalidProductId = await request('/api/admin/products/0', {
     method: 'PUT',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
