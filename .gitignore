@@ -4,3 +4,5 @@ data/*.sqlite
 data/*.sqlite-*
 uploads/*
 !uploads/.gitkeep
+backups/*
+!backups/.gitkeep
