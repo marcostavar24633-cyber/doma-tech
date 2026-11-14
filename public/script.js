@@ -64,3 +64,15 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
   const sign=item.querySelector('summary span');
   if(sign)sign.textContent=item.open?'−':'+';
 }));
+
+
+// Локальная фильтрация демонстрационных моделей: без запросов и хранения данных.
+(()=>{
+ const cards=[...document.querySelectorAll('.market-card')];
+ const type=document.getElementById('filterType'),width=document.getElementById('filterWidth'),budget=document.getElementById('filterBudget'),result=document.getElementById('filterResult'),reset=document.getElementById('resetFilters');
+ if(!cards.length||!type||!width||!budget||!result||!reset)return;
+ const matchesBudget=price=>budget.value==='under30'?price<30000:budget.value==='30to50'?price>=30000&&price<=50000:budget.value==='over50'?price>50000:true;
+ const applyFilters=()=>{let visible=0;cards.forEach(card=>{const show=(type.value==='all'||card.dataset.type===type.value)&&(width.value==='all'||card.dataset.width===width.value)&&matchesBudget(Number(card.dataset.price));card.hidden=!show;if(show)visible++;});result.textContent=visible?'Показано моделей: '+visible+' из '+cards.length:'По выбранным параметрам моделей не найдено. Измените фильтры.';};
+ [type,width,budget].forEach(control=>control.addEventListener('change',applyFilters));
+ reset.addEventListener('click',()=>{type.value='all';width.value='all';budget.value='all';applyFilters();type.focus();});applyFilters();
+})();
