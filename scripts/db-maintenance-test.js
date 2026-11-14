@@ -60,6 +60,27 @@ async function main() {
     const denied = spawnSync(process.execPath, [path.join(__dirname, 'restore-db.js'), filename], { env, encoding: 'utf8' });
     assert.notEqual(denied.status, 0, 'Restore must require explicit opt-in');
 
+    // A tampered backup must be rejected before touching the live database or creating a safety copy.
+    const tamperedName = filename.replace('.sqlite', '-tampered.sqlite');
+    const tamperedManifest = { ...JSON.parse(await fs.readFile(path.join(backupDir, filename + '.json'), 'utf8')), file: tamperedName };
+    await fs.copyFile(path.join(backupDir, filename), path.join(backupDir, tamperedName));
+    await fs.appendFile(path.join(backupDir, tamperedName), Buffer.from('tampered'));
+    await fs.writeFile(path.join(backupDir, tamperedName + '.json'), JSON.stringify(tamperedManifest));
+    const safetyBeforeTamper = (await fs.readdir(backupDir)).filter(name => name.startsWith('doma-tech-before-restore-')).length;
+    const tamperedRestore = spawnSync(process.execPath, [path.join(__dirname, 'restore-db.js'), tamperedName], {
+      env: { ...env, ALLOW_DB_RESTORE: 'true' },
+      encoding: 'utf8'
+    });
+    assert.notEqual(tamperedRestore.status, 0, 'Restore must reject a backup whose contents do not match its SHA-256 manifest');
+    const afterRejectedRestore = new Database(dbPath, { readonly: true });
+    assert.equal(afterRejectedRestore.prepare('SELECT name FROM products').get().name, 'Before backup',
+      'Rejected restore must leave the live database unchanged');
+    afterRejectedRestore.close();
+    const safetyAfterTamper = (await fs.readdir(backupDir)).filter(name => name.startsWith('doma-tech-before-restore-')).length;
+    assert.equal(safetyAfterTamper, safetyBeforeTamper, 'Rejected backup must be rejected before creating a safety copy');
+    await fs.unlink(path.join(backupDir, tamperedName));
+    await fs.unlink(path.join(backupDir, tamperedName + '.json'));
+
     for (let index = 0; index < 4; index += 1) {
       const rotated = spawnSync(process.execPath, [path.join(__dirname, 'backup-db.js')], { env, encoding: 'utf8' });
       assert.equal(rotated.status, 0, rotated.stderr || rotated.stdout);
