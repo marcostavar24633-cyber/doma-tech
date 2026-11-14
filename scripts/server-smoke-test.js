@@ -199,7 +199,7 @@ async function main() {
   assert.equal(adminPage.status, 200, 'Admin interface should be served');
   assert.equal(adminPage.headers.get('cache-control'), 'no-store');
   assert.match(await adminPage.text(), /Панель управления/);
-  const adminScript = await request('/admin.js');
+  const adminScript = await request('/admin-assets/admin.js');
   assert.equal(adminScript.status, 200);
   assert.match(await adminScript.text(), /x-csrf-token/);
 
