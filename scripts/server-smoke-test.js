@@ -187,6 +187,33 @@ async function main() {
   });
   assert.equal(removeProduct.status, 200);
 
+  const categoryCreate = await request('/api/admin/categories', {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Встраиваемые', slug: 'vstraivaemye', sort_order: 1 })
+  });
+  assert.equal(categoryCreate.status, 201);
+  const category = await categoryCreate.json();
+  const categoryList = await request('/api/admin/categories', { headers: { cookie } });
+  assert.ok((await categoryList.json()).some(item => item.id === category.id));
+  const categoryDeleteBlocked = await request('/api/admin/categories/' + category.id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(categoryDeleteBlocked.status, 409, 'Category in use by products must not be deleted');
+  const settingsUpdate = await request('/api/admin/settings', {
+    method: 'PUT',
+    headers: { cookie, 'x-csrf-token': loginBody.csrfToken, 'content-type': 'application/json' },
+    body: JSON.stringify({ site_title:'DOMA TECH Test', hero_title:'Test headline', hero_subtitle:'Test subtitle', hero_cta_text:'Catalog', meta_title:'Test SEO title', meta_description:'Test SEO description' })
+  });
+  assert.equal(settingsUpdate.status, 200);
+  const publicConfig = await request('/api/site-config');
+  assert.equal(publicConfig.status, 200);
+  assert.equal((await publicConfig.json()).settings.site_title, 'DOMA TECH Test');
+  const categoryDelete = await request('/api/admin/categories/' + category.id, {
+    method: 'DELETE', headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
+  });
+  assert.equal(categoryDelete.status, 200);
+
   const logout = await request('/api/admin/logout', {
     method: 'POST',
     headers: { cookie, 'x-csrf-token': loginBody.csrfToken }
