@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   line_total INTEGER NOT NULL CHECK(line_total >= 0)
 );
 CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
-
+`);
 
 const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map(column => column.name);
 if (!orderColumns.includes('consent_version')) db.exec("ALTER TABLE orders ADD COLUMN consent_version TEXT NOT NULL DEFAULT ''");
