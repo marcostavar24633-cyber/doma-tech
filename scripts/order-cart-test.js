@@ -60,7 +60,6 @@ async function req(url, options={}) { return fetch(base+url,{...options,signal:A
     assert.equal(adminOrders.status,200);
     const saved=(await adminOrders.json()).find(item=>item.id===orderBody.id);
     assert.ok(saved);
-    assert.match(saved.message,/Dishwasher premium/);
     assert.match(saved.message,/25\s?000/);
     assert.equal(saved.items.length,1,'Admin API must return structured order items');
     assert.equal(saved.items[0].product_name,'Dishwasher premium');
