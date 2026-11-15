@@ -87,7 +87,7 @@ async function main() {
     body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'Must not be stored by default' })
   });
   assert.equal(disabledOrder.status, 503, 'Public request intake must remain disabled unless explicitly enabled');
-  assert.match((await disabledOrder.json()).error, /отключён/i);
+  assert.match((await disabledOrder.json()).error, /отключено/i);
 
   const disabledHoneypotOrder = await request('/api/orders', {
     method: 'POST',
