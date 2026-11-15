@@ -38,7 +38,12 @@
     const root = $('#order-list');
     if (!state.orders.length) { root.innerHTML = '<p class="muted">Заявок пока нет.</p>'; return; }
     const labels = {new:'Новая',in_progress:'В работе',completed:'Завершена',cancelled:'Отменена'};
-    root.innerHTML = state.orders.map((o) => '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p><p>' + esc(o.message || 'Без комментария') + '</p><p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>').join('');
+    root.innerHTML = state.orders.map((o) => {
+      const items = Array.isArray(o.items) && o.items.length
+        ? '<div class="order-lines"><strong>Состав заказа</strong><ul>' + o.items.map(item => '<li><span>' + esc(item.product_name) + ' × ' + Number(item.quantity) + '</span><b>' + esc(money(item.line_total)) + '</b></li>').join('') + '</ul><p class="order-lines-total">Сумма по каталожным ценам: ' + esc(money(o.items.reduce((sum,item) => sum + Number(item.line_total || 0),0))) + '</p></div>'
+        : '';
+      return '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p>' + (o.message ? '<p>' + esc(o.message) + '</p>' : '<p>Без комментария</p>') + items + '<p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>';
+    }).join('');
   }
   function renderCategories() {
     const root = $('#category-list');
