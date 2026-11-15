@@ -91,8 +91,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   line_total INTEGER NOT NULL CHECK(line_total >= 0)
 );
 CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
-`);
 
+
+const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map(column => column.name);
+if (!orderColumns.includes('consent_version')) db.exec("ALTER TABLE orders ADD COLUMN consent_version TEXT NOT NULL DEFAULT ''");
+if (!orderColumns.includes('consented_at')) db.exec("ALTER TABLE orders ADD COLUMN consented_at TEXT");
 const productColumns = db.prepare('PRAGMA table_info(products)').all().map(column => column.name);
 if (!productColumns.includes('slug')) db.exec("ALTER TABLE products ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
 if (!productColumns.includes('meta_title')) db.exec("ALTER TABLE products ADD COLUMN meta_title TEXT NOT NULL DEFAULT ''");
@@ -402,14 +405,33 @@ app.get('/', (req,res,next) => {
     res.type('html').send(html);
   }).catch(next);
 });
+function getOrderConsentConfig() {
+  let privacyPolicyUrl = '';
+  try {
+    const parsed = new URL(String(process.env.PRIVACY_POLICY_URL || '').trim());
+    if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) privacyPolicyUrl = parsed.toString();
+  } catch {}
+  const consentVersion = cleanText(process.env.ORDER_CONSENT_VERSION, 40);
+  const enabled = process.env.ORDER_INTAKE_ENABLED === 'true' && Boolean(privacyPolicyUrl && consentVersion);
+  return { enabled, privacyPolicyUrl: enabled ? privacyPolicyUrl : '', consentVersion: enabled ? consentVersion : '' };
+}
+app.get('/api/storefront-config', (req,res)=>{
+  const config = getOrderConsentConfig();
+  res.set('Cache-Control','no-store');
+  res.json({ orderIntakeEnabled: config.enabled, privacyPolicyUrl: config.privacyPolicyUrl, consentVersion: config.consentVersion });
+});
 app.get('/api/health', (req,res)=>res.json({ ok:true, service:'DOMA TECH' }));
 app.get('/api/products', (req,res)=>{
   const products = db.prepare('SELECT id,name,category,price,description,image,slug FROM products WHERE active=1 ORDER BY created_at DESC').all();
   res.json(products);
 });
 app.post('/api/orders', orderLimiter, (req,res)=>{
-  if (process.env.ORDER_INTAKE_ENABLED !== 'true') {
-    return res.status(503).json({ error: 'Приём заявок временно отключён. Свяжитесь с администратором сайта.' });
+  const consentConfig = getOrderConsentConfig();
+  if (!consentConfig.enabled) {
+    return res.status(503).json({ error: 'Оформление временно отключено: не настроены параметры приёма и согласия.' });
+  }
+  if (req.body.consent !== true || req.body.consent_version !== consentConfig.consentVersion) {
+    return res.status(400).json({ error: 'Для отправки заявки подтвердите согласие с обработкой персональных данных.' });
   }
   const name = cleanText(req.body.name, 100);
   const contact = cleanText(req.body.contact, 160);
@@ -446,7 +468,7 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
     message = note;
   }
   const createOrder = db.transaction(() => {
-    const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
+    const result = db.prepare('INSERT INTO orders(name,contact,message,consent_version,consented_at) VALUES(?,?,?,?,?)').run(name,contact,message,consentConfig.consentVersion,new Date().toISOString());
     if (items.length) {
       const insertItem = db.prepare('INSERT INTO order_items(order_id,product_id,product_name,unit_price,quantity,line_total) VALUES(?,?,?,?,?,?)');
       for (const item of items) insertItem.run(result.lastInsertRowid,item.productId,item.productName,item.unitPrice,item.quantity,item.lineTotal);
