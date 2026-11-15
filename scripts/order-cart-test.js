@@ -16,7 +16,7 @@ async function start() {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NODE_ENV:'test', PORT:String(port), DATA_DIR:path.join(root,'data'),
       UPLOAD_DIR:path.join(root,'uploads'), SESSION_SECRET:'cart-test-session-secret-at-least-32-characters',
-      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true', PRIVACY_POLICY_URL:'https://example.invalid/privacy', ORDER_CONSENT_VERSION:'cart-consent-v1',
+      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true',
       PRIVACY_POLICY_URL:'https://example.invalid/privacy', ORDER_CONSENT_VERSION:'2026-11-15-v1' },
     stdio:['ignore','pipe','pipe']
   });
