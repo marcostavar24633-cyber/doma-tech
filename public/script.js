@@ -323,14 +323,131 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
         cartTotal.className = 'managed-cart-total';
         const cartNotice = document.createElement('p');
         cartNotice.className = 'managed-cart-notice';
-        cartNotice.textContent = 'Демонстрационный режим: приём заказов пока отключён. Итог рассчитан по ценам, указанным в каталоге, и требует подтверждения.';
+        cartNotice.textContent = 'Оформление пока отключено. Для включения нужны опубликованная политика обработки персональных данных и версия текста согласия на сервере.';
         const checkoutButton = document.createElement('button');
         checkoutButton.type = 'button';
         checkoutButton.className = 'managed-cart-checkout';
         checkoutButton.disabled = true;
         checkoutButton.textContent = 'Оформление временно недоступно';
-        cartFooter.append(cartTotal, cartNotice, checkoutButton);
+        const checkoutForm = document.createElement('form');
+        checkoutForm.className = 'managed-checkout-form';
+        checkoutForm.hidden = true;
+        const formTitle = document.createElement('h4');
+        formTitle.textContent = 'Контактные данные';
+        const makeField = (labelText, name, type, autocomplete) => {
+          const label = document.createElement('label');
+          label.className = 'managed-checkout-field';
+          const caption = document.createElement('span');
+          caption.textContent = labelText;
+          const input = document.createElement('input');
+          input.name = name;
+          input.type = type;
+          input.required = true;
+          input.autocomplete = autocomplete || 'off';
+          input.maxLength = name === 'contact' ? 160 : 100;
+          label.append(caption, input);
+          return { label, input };
+        };
+        const nameField = makeField('Ваше имя', 'name', 'text', 'name');
+        const contactField = makeField('Телефон или e-mail', 'contact', 'text', 'off');
+        const noteLabel = document.createElement('label');
+        noteLabel.className = 'managed-checkout-field';
+        const noteCaption = document.createElement('span');
+        noteCaption.textContent = 'Комментарий (необязательно)';
+        const noteInput = document.createElement('textarea');
+        noteInput.name = 'message';
+        noteInput.maxLength = 500;
+        noteInput.rows = 3;
+        noteLabel.append(noteCaption, noteInput);
+        const consentLabel = document.createElement('label');
+        consentLabel.className = 'managed-checkout-consent';
+        const consentInput = document.createElement('input');
+        consentInput.type = 'checkbox';
+        consentInput.name = 'consent';
+        consentInput.required = true;
+        const consentText = document.createElement('span');
+        consentText.append(document.createTextNode('Согласен на обработку персональных данных согласно '));
+        const policyLink = document.createElement('a');
+        policyLink.textContent = 'политике конфиденциальности';
+        policyLink.target = '_blank';
+        policyLink.rel = 'noopener noreferrer';
+        consentText.append(policyLink);
+        consentLabel.append(consentInput, consentText);
+        const honeypotLabel = document.createElement('label');
+        honeypotLabel.className = 'managed-checkout-honeypot';
+        honeypotLabel.setAttribute('aria-hidden', 'true');
+        const honeypotInput = document.createElement('input');
+        honeypotInput.name = 'website';
+        honeypotInput.tabIndex = -1;
+        honeypotInput.autocomplete = 'off';
+        honeypotLabel.append(document.createTextNode('Website'), honeypotInput);
+        const formActions = document.createElement('div');
+        formActions.className = 'managed-checkout-actions';
+        const submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        submitButton.className = 'managed-cart-checkout';
+        submitButton.textContent = 'Отправить заявку';
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.className = 'managed-checkout-cancel';
+        cancelButton.textContent = 'Отмена';
+        formActions.append(submitButton, cancelButton);
+        const formStatus = document.createElement('p');
+        formStatus.className = 'managed-checkout-status';
+        formStatus.setAttribute('role', 'status');
+        checkoutForm.append(formTitle, nameField.label, contactField.label, noteLabel, consentLabel, honeypotLabel, formActions, formStatus);
+        cartFooter.append(cartTotal, cartNotice, checkoutButton, checkoutForm);
         cartPanel.append(cartHeader, cartList, cartFooter);
+
+        let checkoutConfig = { enabled: false, privacyPolicyUrl: '', consentVersion: '' };
+        checkoutButton.addEventListener('click', () => {
+          if (!checkoutConfig.enabled || !cart.length) return;
+          checkoutForm.hidden = false;
+          checkoutButton.hidden = true;
+          nameField.input.focus();
+          checkoutForm.scrollIntoView({ block: 'nearest' });
+        });
+        cancelButton.addEventListener('click', () => {
+          checkoutForm.hidden = true;
+          checkoutButton.hidden = false;
+          formStatus.textContent = '';
+        });
+        checkoutForm.addEventListener('submit', async event => {
+          event.preventDefault();
+          if (!checkoutConfig.enabled || !cart.length) return;
+          submitButton.disabled = true;
+          formStatus.textContent = 'Отправляем заявку…';
+          try {
+            const response = await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({
+                name: nameField.input.value.trim(),
+                contact: contactField.input.value.trim(),
+                message: noteInput.value.trim(),
+                website: honeypotInput.value,
+                consent: consentInput.checked,
+                consent_version: checkoutConfig.consentVersion,
+                items: cart.map(item => ({ product_id: item.productId, quantity: item.quantity }))
+              })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Не удалось отправить заявку');
+            cart = [];
+            saveCart();
+            checkoutForm.reset();
+            checkoutForm.hidden = true;
+            checkoutButton.hidden = false;
+            formStatus.textContent = '';
+            cartNotice.textContent = 'Заявка №' + result.id + ' отправлена. Итог по каталожным ценам: ' + new Intl.NumberFormat('ru-RU').format(result.total || 0) + ' ₽. Менеджер должен подтвердить наличие и условия.';
+            notify('Заявка отправлена. Номер: ' + result.id);
+            renderCart();
+          } catch (error) {
+            formStatus.textContent = error.message || 'Ошибка отправки. Попробуйте позже.';
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
 
         let cart = [];
         try {
@@ -352,6 +469,7 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           const count = cart.reduce((sum, item) => sum + item.quantity, 0);
           cartCount.textContent = count + (count === 1 ? ' товар' : count >= 2 && count <= 4 ? ' товара' : ' товаров');
           let total = 0;
+          let hasUnavailable = false;
           if (!cart.length) {
             const empty = document.createElement('p');
             empty.className = 'managed-cart-empty';
@@ -373,6 +491,7 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
               itemPrice.textContent = new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽ × ' + item.quantity + ' = ' + new Intl.NumberFormat('ru-RU').format(lineTotal) + ' ₽';
             } else {
               itemPrice.textContent = 'Цена не подтверждена — удалить позицию';
+              hasUnavailable = true;
             }
             details.append(itemName, itemPrice);
             const controls = document.createElement('div');
@@ -403,11 +522,22 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
             cartList.append(row);
           });
           cartTotal.textContent = 'Итого по каталогу: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
-          checkoutButton.disabled = true;
+          checkoutButton.disabled = !checkoutConfig.enabled || !cart.length || hasUnavailable;
         };
         saveCart();
         section.replaceChildren(heading, grid, cartPanel);
         renderCart();
+        fetch('/api/storefront-config', { headers: { Accept: 'application/json' } })
+          .then(response => response.ok ? response.json() : null)
+          .then(config => {
+            if (!config || config.orderIntakeEnabled !== true || !config.privacyPolicyUrl || !config.consentVersion) return;
+            checkoutConfig = { enabled: true, privacyPolicyUrl: config.privacyPolicyUrl, consentVersion: config.consentVersion };
+            policyLink.href = checkoutConfig.privacyPolicyUrl;
+            cartNotice.textContent = 'Наличие и условия заказа подтвердит менеджер. Итог предварительный и рассчитан по текущим ценам каталога.';
+            checkoutButton.textContent = 'Перейти к оформлению';
+            renderCart();
+          })
+          .catch(() => {});
       }
     }
   } catch {
