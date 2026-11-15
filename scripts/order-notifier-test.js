@@ -60,6 +60,14 @@ async function main() {
     assert.equal(incompleteTelegram.delivered, 0);
     assert.match(incompleteTelegram.errors[0], /requires both/);
 
+    global.fetch = async () => { throw new Error('fetch failed https://api.telegram.org/bot-secret-token/sendMessage'); };
+    const failedTelegram = await notifyOrder(
+      { id: 21 },
+      { ORDER_TELEGRAM_BOT_TOKEN: 'secret-token', ORDER_TELEGRAM_CHAT_ID: '12345' }
+    );
+    assert.equal(failedTelegram.delivered, 0);
+    assert.doesNotMatch(failedTelegram.errors.join(' '), /secret-token/);
+
     process.stdout.write('Order notification tests passed\n');
   } finally {
     global.fetch = originalFetch;
