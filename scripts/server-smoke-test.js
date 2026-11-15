@@ -69,8 +69,8 @@ async function main() {
   const unconfiguredHtml = await unconfiguredHome.text();
   assert.doesNotMatch(unconfiguredHtml, /rel="canonical"/);
   assert.doesNotMatch(unconfiguredHtml, /property="og:url"/);
-  assert.doesNotMatch(unconfiguredHtml, /github\\.io\\/doma-tech/);
-  assert.doesNotMatch(unconfiguredHtml, /application\\/ld\\+json/);
+  assert.doesNotMatch(unconfiguredHtml, /github\.io\/doma-tech/);
+  assert.doesNotMatch(unconfiguredHtml, /application\/ld\+json/);
   assert.match(unconfiguredHtml, /name="robots" content="noindex,follow"/);
 
   const products = await request('/api/products');
