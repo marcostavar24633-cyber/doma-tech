@@ -6,7 +6,7 @@ function buildOrderMessage(order) {
   const createdAt = typeof order.createdAt === 'string' && order.createdAt
     ? order.createdAt
     : 'время не указано';
-  return ['DOMA TECH: новая заявка', `Номер: #${id}`, `Создана: ${createdAt}`].join('\\n');
+  return ['DOMA TECH: новая заявка', `Номер: #${id}`, `Создана: ${createdAt}`].join('\n');
 }
 
 async function requestJson(url, body, timeoutMs = 8000) {
