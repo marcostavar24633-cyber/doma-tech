@@ -42,7 +42,10 @@
       const items = Array.isArray(o.items) && o.items.length
         ? '<div class="order-lines"><strong>Состав заказа</strong><ul>' + o.items.map(item => '<li><span>' + esc(item.product_name) + ' × ' + Number(item.quantity) + '</span><b>' + esc(money(item.line_total)) + '</b></li>').join('') + '</ul><p class="order-lines-total">Сумма по каталожным ценам: ' + esc(money(o.items.reduce((sum,item) => sum + Number(item.line_total || 0),0))) + '</p></div>'
         : '';
-      return '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p>' + (o.message ? '<p>' + esc(o.message) + '</p>' : '<p>Без комментария</p>') + items + '<p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>';
+      const consent = o.consent_version
+        ? '<p class="order-consent-record"><strong>Согласие:</strong> версия ' + esc(o.consent_version) + (o.consented_at ? ' · ' + esc(o.consented_at) : '') + '</p>'
+        : '<p class="order-consent-record">Согласие не зафиксировано (старая заявка)</p>';
+      return '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p>' + (o.message ? '<p>' + esc(o.message) + '</p>' : '<p>Без комментария</p>') + items + consent + '<p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>';
     }).join('');
   }
   function renderCategories() {
