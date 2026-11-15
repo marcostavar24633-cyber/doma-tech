@@ -18,6 +18,8 @@ const applyMarketImageFallback = image => {
   const visual = image.closest('.market-visual');
   if (!visual || visual.classList.contains('image-fallback')) return;
   visual.classList.add('image-fallback');
+  visual.setAttribute('role', 'img');
+  visual.setAttribute('aria-label', (image.alt || 'Изображение товара') + '. Фото временно недоступно; показана нейтральная заглушка.');
   image.hidden = true;
   if (!visual.querySelector('.image-fallback-label')) {
     const label = document.createElement('span');
