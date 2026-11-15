@@ -554,3 +554,22 @@ body.menu-open{overflow:hidden}
 .managed-cart-checkout{min-height:44px;padding:12px 20px;border:0;border-radius:999px;background:#233c47;color:#fff;font-size:11px;font-weight:800;cursor:not-allowed;opacity:.55}
 @media(max-width:650px){.managed-cart{padding:18px;margin-top:20px}.managed-cart-header h3{font-size:20px}.managed-cart-row{align-items:flex-start;flex-direction:column;gap:12px}.managed-cart-controls{width:100%;justify-content:flex-start}.managed-cart-footer{justify-items:stretch}.managed-cart-total{font-size:18px}.managed-cart-notice{text-align:left}.managed-cart-checkout{width:100%}.cart-add-button{width:calc(100% - 32px);margin:0 16px 16px}}
 @media(prefers-reduced-motion:reduce){.cart-add-button{transition:none}}
+
+
+/* Consent-gated checkout */
+.managed-checkout-form{display:grid;gap:14px;width:100%;max-width:620px;margin-top:12px;padding:20px;border:1px solid #e8e2d7;border-radius:14px;background:#fbfaf7}
+.managed-checkout-form[hidden],.managed-cart-checkout[hidden]{display:none}
+.managed-checkout-form h4{margin:0;color:#203640;font:800 17px Manrope,sans-serif}
+.managed-checkout-field{display:grid;gap:7px;color:#52636a;font-size:11px;font-weight:700}
+.managed-checkout-field input,.managed-checkout-field textarea{width:100%;min-height:44px;padding:11px 13px;border:1px solid #dedbd3;border-radius:9px;background:#fff;color:#203640;font:inherit}
+.managed-checkout-field textarea{resize:vertical}
+.managed-checkout-field input:focus-visible,.managed-checkout-field textarea:focus-visible,.managed-checkout-consent input:focus-visible{outline:3px solid rgba(201,150,93,.35);outline-offset:2px}
+.managed-checkout-consent{display:flex;align-items:flex-start;gap:10px;color:#65747a;font-size:11px;line-height:1.55}
+.managed-checkout-consent input{width:17px;height:17px;margin:1px 0 0;flex-shrink:0;accent-color:#9b744b}
+.managed-checkout-consent a{color:#8b6238;text-decoration:underline;text-underline-offset:3px}
+.managed-checkout-honeypot{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.managed-checkout-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.managed-checkout-actions .managed-cart-checkout{cursor:pointer;opacity:1}
+.managed-checkout-cancel{min-height:42px;padding:10px 18px;border:1px solid #dedbd3;border-radius:999px;background:#fff;color:#52636a;font-size:11px;font-weight:700;cursor:pointer}
+.managed-checkout-status{margin:0;color:#8b6238;font-size:11px;line-height:1.5}
+@media(max-width:650px){.managed-checkout-form{padding:15px}.managed-checkout-actions{display:grid}.managed-checkout-actions button{width:100%}}
