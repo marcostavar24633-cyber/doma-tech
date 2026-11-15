@@ -87,7 +87,7 @@ async function notifyOrder(order, env = process.env) {
       });
       delivered += 1;
     } catch (error) {
-      errors.push(error.name === 'AbortError' ? 'Order webhook notification timed out.' : 'Order webhook delivery failed (network or endpoint error).');
+      errors.push(error.name === 'AbortError' ? 'Order webhook notification timed out.' : error.message === 'ORDER_ALERT_WEBHOOK must be an HTTPS URL without embedded credentials.' ? error.message : 'Order webhook delivery failed (network or endpoint error).');
     }
   }
 
