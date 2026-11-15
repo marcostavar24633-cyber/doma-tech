@@ -81,6 +81,16 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT NOT NULL DEFAULT 'new',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS order_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL,
+  unit_price INTEGER NOT NULL CHECK(unit_price >= 0),
+  quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20),
+  line_total INTEGER NOT NULL CHECK(line_total >= 0)
+);
+CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
 `);
 
 const productColumns = db.prepare('PRAGMA table_info(products)').all().map(column => column.name);
@@ -403,15 +413,53 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
   }
   const name = cleanText(req.body.name, 100);
   const contact = cleanText(req.body.contact, 160);
-  const message = cleanText(req.body.message, 1000);
+  const note = cleanText(req.body.message, 500);
   if (!name || !contact) return res.status(400).json({ error: 'Укажите имя и телефон или e-mail' });
   if (req.body.website) return res.status(400).json({ error: 'Некорректная заявка' }); // honeypot
-  const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
-  const created = db.prepare('SELECT created_at FROM orders WHERE id=?').get(result.lastInsertRowid);
-  void notifyOrder({ id: Number(result.lastInsertRowid), createdAt: created && created.created_at }).then(notification => {
+  let items = [];
+  let total = 0;
+  let message = note;
+  if (req.body.items !== undefined) {
+    if (!Array.isArray(req.body.items) || req.body.items.length < 1 || req.body.items.length > 10) {
+      return res.status(400).json({ error: 'Корзина должна содержать от 1 до 10 разных товаров' });
+    }
+    const seen = new Set();
+    for (const item of req.body.items) {
+      const productId = Number(item && item.product_id);
+      const quantity = Number(item && item.quantity);
+      if (!Number.isSafeInteger(productId) || productId < 1 || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20 || seen.has(productId)) {
+        return res.status(400).json({ error: 'Проверьте товары и количество в корзине' });
+      }
+      seen.add(productId);
+      const product = db.prepare('SELECT id,name,price FROM products WHERE id=? AND active=1').get(productId);
+      if (!product) return res.status(409).json({ error: 'Один из товаров больше недоступен. Обновите корзину.' });
+      if (!Number.isSafeInteger(product.price) || product.price < 0) {
+        return res.status(409).json({ error: 'Для товара «' + cleanText(product.name, 80) + '» цена пока не подтверждена' });
+      }
+      const lineTotal = product.price * quantity;
+      if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(total + lineTotal)) {
+        return res.status(400).json({ error: 'Сумма заказа превышает допустимое значение' });
+      }
+      total += lineTotal;
+      items.push({ productId, productName: cleanText(product.name, 120), unitPrice: product.price, quantity, lineTotal });
+    }
+    const summary = 'Состав заказа:\n' + items.map(item => '• ' + item.productName.slice(0, 65) + ' × ' + item.quantity + ' — ' + new Intl.NumberFormat('ru-RU').format(item.lineTotal) + ' ₽').join('\n') + '\nИтого по каталожным ценам: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
+    message = [summary, note].filter(Boolean).join('\n\n').slice(0, 1000);
+  }
+  const createOrder = db.transaction(() => {
+    const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
+    if (items.length) {
+      const insertItem = db.prepare('INSERT INTO order_items(order_id,product_id,product_name,unit_price,quantity,line_total) VALUES(?,?,?,?,?,?)');
+      for (const item of items) insertItem.run(result.lastInsertRowid,item.productId,item.productName,item.unitPrice,item.quantity,item.lineTotal);
+    }
+    return Number(result.lastInsertRowid);
+  });
+  const orderId = createOrder();
+  const created = db.prepare('SELECT created_at FROM orders WHERE id=?').get(orderId);
+  void notifyOrder({ id: orderId, createdAt: created && created.created_at }).then(notification => {
     if (notification.errors.length) process.stderr.write('Order notification: ' + notification.errors.join('; ') + '\n');
   }).catch(error => process.stderr.write('Order notification failed: ' + error.message + '\n'));
-  res.status(201).json({ ok:true, id:result.lastInsertRowid, message:'Заявка принята' });
+  res.status(201).json({ ok:true, id:orderId, total:items.length ? total : null, message:'Заявка принята' });
 });
 
 app.post('/api/admin/login', loginLimiter, (req,res)=>{
