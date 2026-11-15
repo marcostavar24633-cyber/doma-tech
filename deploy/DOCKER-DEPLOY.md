@@ -99,6 +99,6 @@ If an update fails, stop the container and roll back to the previously verified 
 ## Important limitations
 
 - The public GitHub Pages site remains a static prototype; Docker does not deploy or connect it to this server.
-- The protected admin interface is served at `/admin`; it supports login, product CRUD, image uploads, and order status updates. Verify it on a private staging deployment before accepting real customer data.
+- The protected admin interface is served at `/admin`; it supports login, product/category management, image uploads, order status updates, and structured order line items (product snapshot, quantity, and line total). The server-side storefront cart only accepts managed catalog products; the browser sends product IDs and quantities, while the server revalidates active status and prices and stores order lines transactionally. Checkout remains disabled until legal and operational readiness is confirmed. Verify it on a private staging deployment before accepting real customer data.
 - Real production deployment, TLS reverse proxy, firewall, credentials, cloud backup, monitoring, and legal compliance are not configured by committing this guide.
 - Run this first on a disposable staging host. Do not accept live customer data until the complete application and security review are finished.
