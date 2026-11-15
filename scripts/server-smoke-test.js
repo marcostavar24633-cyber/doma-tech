@@ -427,8 +427,8 @@ async function main() {
   assert.match(renderedHtml, /name="robots" content="index,follow"/);
   assert.ok(renderedHtml.includes('rel="canonical" href="https://example.test/"'));
   assert.ok(renderedHtml.includes('property="og:url" content="https://example.test/"'));
-  assert.ok(renderedHtml.includes('"@id":"https://example.test/#website"'));
-  assert.ok(renderedHtml.includes('"url":"https://example.test/"'));
+  assert.match(renderedHtml, /"@id":\\s*"https:\\/\\/example\\.test\\/#website"/);
+  assert.match(renderedHtml, /"url":\\s*"https:\\/\\/example\\.test\\/"/);
   assert.doesNotMatch(renderedHtml, /github\.io\/doma-tech/);
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
