@@ -324,7 +324,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opac
   border:1px solid rgba(198,164,119,.28);
   border-radius:999px;
   background:rgba(16,21,26,.88);
-  color:#e1d1b7;
+  color:#e1d1b7 !important;
   font-size:9px;
   font-weight:600;
   letter-spacing:.08em;
