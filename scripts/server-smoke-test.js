@@ -74,6 +74,9 @@ async function main() {
   assert.doesNotMatch(unconfiguredHtml, /application\/ld\+json/);
   assert.match(unconfiguredHtml, /name="robots" content="noindex,follow"/);
 
+  const storefrontDisabled = await request('/api/storefront-config');
+  assert.equal(storefrontDisabled.status, 200);
+  assert.equal((await storefrontDisabled.json()).orderIntakeEnabled, false);
   const products = await request('/api/products');
   assert.equal(products.status, 200);
   assert.ok(Array.isArray(await products.json()));
@@ -95,7 +98,7 @@ async function main() {
 
   // Verify the explicit opt-in still permits controlled server-side testing.
   await stopServer();
-  await startServer({ ORDER_INTAKE_ENABLED: 'true' });
+  await startServer({ ORDER_INTAKE_ENABLED: 'true', PRIVACY_POLICY_URL: 'https://example.invalid/privacy', ORDER_CONSENT_VERSION: '2026-11-15-v1' });
   let intakeReady = false;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     try {
@@ -105,6 +108,19 @@ async function main() {
     await delay(250);
   }
   assert.equal(intakeReady, true, `Server did not restart with request intake enabled:\\n${output}`);
+
+  const enabledStorefront = await request('/api/storefront-config');
+  const enabledConfig = await enabledStorefront.json();
+  assert.equal(enabledConfig.orderIntakeEnabled, true);
+  assert.equal(enabledConfig.privacyPolicyUrl, 'https://example.invalid/privacy');
+  assert.equal(enabledConfig.consentVersion, '2026-11-15-v1');
+
+  const missingConsent = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', message: 'No consent' })
+  });
+  assert.equal(missingConsent.status, 400, 'Consent is required before accepting personal data');
 
   const badOrder = await request('/api/orders', {
     method: 'POST',
@@ -116,7 +132,7 @@ async function main() {
   const order = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'CI only' })
+    body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'CI only', consent: true, consent_version: '2026-11-15-v1' })
   });
   assert.equal(order.status, 201, 'Valid request should be accepted only after explicit opt-in');
   const orderBody = await order.json();
@@ -176,7 +192,10 @@ async function main() {
 
   const adminOrders = await request('/api/admin/orders', { headers: { cookie } });
   assert.equal(adminOrders.status, 200);
-  assert.ok((await adminOrders.json()).some(item => item.id === orderBody.id));
+  const storedOrder = (await adminOrders.json()).find(item => item.id === orderBody.id);
+  assert.ok(storedOrder);
+  assert.equal(storedOrder.consent_version, '2026-11-15-v1');
+  assert.ok(storedOrder.consented_at);
 
   const updateOrder = await request(`/api/admin/orders/${orderBody.id}`, {
     method: 'PATCH',
