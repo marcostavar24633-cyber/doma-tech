@@ -16,7 +16,8 @@ async function start() {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NODE_ENV:'test', PORT:String(port), DATA_DIR:path.join(root,'data'),
       UPLOAD_DIR:path.join(root,'uploads'), SESSION_SECRET:'cart-test-session-secret-at-least-32-characters',
-      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true' },
+      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true',
+      PRIVACY_POLICY_URL:'https://example.invalid/privacy', ORDER_CONSENT_VERSION:'2026-11-15-v1' },
     stdio:['ignore','pipe','pipe']
   });
   child.stdout.on('data', chunk => { output += chunk.toString(); });
@@ -51,7 +52,7 @@ async function req(url, options={}) { return fetch(base+url,{...options,signal:A
     assert.equal(created.status,201);
     const product=await created.json();
     const order=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      name:'Cart customer',contact:'customer@example.invalid',items:[{product_id:product.id,quantity:2,price:1}]
+      name:'Cart customer',contact:'customer@example.invalid',consent:true,consent_version:'2026-11-15-v1',items:[{product_id:product.id,quantity:2,price:1}]
     })});
     assert.equal(order.status,201);
     const orderBody=await order.json();
@@ -61,26 +62,28 @@ async function req(url, options={}) { return fetch(base+url,{...options,signal:A
     const saved=(await adminOrders.json()).find(item=>item.id===orderBody.id);
     assert.ok(saved);
     assert.equal(saved.message,'','Cart line items must be stored separately from the customer note');
+    assert.equal(saved.consent_version,'2026-11-15-v1');
+    assert.ok(saved.consented_at);
     assert.equal(saved.items.length,1,'Admin API must return structured order items');
     assert.equal(saved.items[0].product_name,'Dishwasher premium');
     assert.equal(saved.items[0].unit_price,12500);
     assert.equal(saved.items[0].quantity,2);
     assert.equal(saved.items[0].line_total,25000);
     const invalidQuantity=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      name:'Test',contact:'test@example.invalid',items:[{product_id:product.id,quantity:21}]
+      name:'Test',contact:'test@example.invalid',consent:true,consent_version:'2026-11-15-v1',items:[{product_id:product.id,quantity:21}]
     })});
     assert.equal(invalidQuantity.status,400);
     const hidden=await req('/api/admin/products/'+product.id+'/visibility',{method:'PATCH',headers,body:JSON.stringify({active:false})});
     assert.equal(hidden.status,200);
     const hiddenOrder=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      name:'Test',contact:'test@example.invalid',items:[{product_id:product.id,quantity:1}]
+      name:'Test',contact:'test@example.invalid',consent:true,consent_version:'2026-11-15-v1',items:[{product_id:product.id,quantity:1}]
     })});
     assert.equal(hiddenOrder.status,409,'Hidden products must not be orderable');
     const unpriced=await createProduct('Unpriced appliance','');
     assert.equal(unpriced.status,201);
     const unpricedProduct=await unpriced.json();
     const unpricedOrder=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
-      name:'Test',contact:'test@example.invalid',items:[{product_id:unpricedProduct.id,quantity:1}]
+      name:'Test',contact:'test@example.invalid',consent:true,consent_version:'2026-11-15-v1',items:[{product_id:unpricedProduct.id,quantity:1}]
     })});
     assert.equal(unpricedOrder.status,409,'Products without a confirmed price must not be orderable');
     console.log('Order cart tests passed');
