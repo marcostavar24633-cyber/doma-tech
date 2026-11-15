@@ -77,21 +77,20 @@ async function main() {
   assert.equal(products.status, 200);
   assert.ok(Array.isArray(await products.json()));
 
-  const badOrder = await request('/api/orders', {
+  const disabledOrder = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'Must not be stored by default' })
+  });
+  assert.equal(disabledOrder.status, 503, 'Public request intake must remain disabled unless explicitly enabled');
+  assert.match((await disabledOrder.json()).error, /отключён/i);
+
+  const disabledHoneypotOrder = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot' })
   });
-  assert.equal(badOrder.status, 400, 'Honeypot must reject filled website field');
-
-  const order = await request('/api/orders', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'CI only' })
-  });
-  assert.equal(order.status, 201, 'Valid demo order should be accepted by isolated test DB');
-  const orderBody = await order.json();
-  assert.ok(Number.isSafeInteger(orderBody.id));
+  assert.equal(disabledHoneypotOrder.status, 503, 'Disabled request intake must not accept honeypot submissions either');
 
   const unauthorized = await request('/api/admin/products');
   assert.equal(unauthorized.status, 401);
