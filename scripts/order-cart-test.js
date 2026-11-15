@@ -16,7 +16,7 @@ async function start() {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NODE_ENV:'test', PORT:String(port), DATA_DIR:path.join(root,'data'),
       UPLOAD_DIR:path.join(root,'uploads'), SESSION_SECRET:'cart-test-session-secret-at-least-32-characters',
-      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true',
+      ADMIN_USERNAME:'cart-admin', ADMIN_PASSWORD:'cart-test-password', ORDER_INTAKE_ENABLED:'true', PRIVACY_POLICY_URL:'https://example.invalid/privacy', ORDER_CONSENT_VERSION:'cart-consent-v1',
       PRIVACY_POLICY_URL:'https://example.invalid/privacy', ORDER_CONSENT_VERSION:'2026-11-15-v1' },
     stdio:['ignore','pipe','pipe']
   });
@@ -57,6 +57,14 @@ async function req(url, options={}) { return fetch(base+url,{...options,signal:A
     assert.equal(order.status,201);
     const orderBody=await order.json();
     assert.equal(orderBody.total,25000,'Server must calculate total from database price, ignoring client price');
+    const noConsentOrder=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+      name:'No consent',contact:'customer@example.invalid',items:[{product_id:product.id,quantity:1}]
+    })});
+    assert.equal(noConsentOrder.status,400,'Cart orders must require explicit consent');
+    const mismatchConsent=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+      name:'Stale consent',contact:'customer@example.invalid',consent:true,consent_version:'old-version',items:[{product_id:product.id,quantity:1}]
+    })});
+    assert.equal(mismatchConsent.status,400,'Consent version must match the published version');
     const adminOrders=await req('/api/admin/orders',{headers:{cookie}});
     assert.equal(adminOrders.status,200);
     const saved=(await adminOrders.json()).find(item=>item.id===orderBody.id);
