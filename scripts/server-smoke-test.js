@@ -11,7 +11,7 @@ const port = 3100 + Math.floor(Math.random() * 1000);
 const base = `http://127.0.0.1:${port}`;
 const tempRootPromise = fs.mkdtemp(path.join(os.tmpdir(), 'doma-tech-smoke-'));
 let server;
-async function startServer() {
+async function startServer(extraEnv = {}) {
   const tempRoot = await tempRootPromise;
   server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
   cwd: path.join(__dirname, '..'),
@@ -23,7 +23,8 @@ async function startServer() {
     UPLOAD_DIR: path.join(tempRoot, 'uploads'),
     SESSION_SECRET: 'smoke-test-session-secret-at-least-32-characters',
     ADMIN_USERNAME: 'smoke-admin',
-    ADMIN_PASSWORD: 'smoke-test-password-not-for-production'
+    ADMIN_PASSWORD: 'smoke-test-password-not-for-production',
+    ...extraEnv
   },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -77,19 +78,47 @@ async function main() {
   assert.equal(products.status, 200);
   assert.ok(Array.isArray(await products.json()));
 
+  const disabledOrder = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'Must not be stored by default' })
+  });
+  assert.equal(disabledOrder.status, 503, 'Public request intake must remain disabled unless explicitly enabled');
+  assert.match((await disabledOrder.json()).error, /отключён/i);
+
+  const disabledHoneypotOrder = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot' })
+  });
+  assert.equal(disabledHoneypotOrder.status, 503, 'Disabled request intake must not accept honeypot submissions either');
+
+  // Verify the explicit opt-in still permits controlled server-side testing.
+  await stopServer();
+  await startServer({ ORDER_INTAKE_ENABLED: 'true' });
+  let intakeReady = false;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      const response = await request('/api/health');
+      if (response.ok) { intakeReady = true; break; }
+    } catch {}
+    await delay(250);
+  }
+  assert.equal(intakeReady, true, `Server did not restart with request intake enabled:\\n${output}`);
+
   const badOrder = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot' })
   });
-  assert.equal(badOrder.status, 400, 'Honeypot must reject filled website field');
+  assert.equal(badOrder.status, 400, 'Honeypot must reject filled website field when intake is enabled');
 
   const order = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: 'Smoke Test', contact: 'test@example.invalid', message: 'CI only' })
   });
-  assert.equal(order.status, 201, 'Valid demo order should be accepted by isolated test DB');
+  assert.equal(order.status, 201, 'Valid request should be accepted only after explicit opt-in');
   const orderBody = await order.json();
   assert.ok(Number.isSafeInteger(orderBody.id));
 

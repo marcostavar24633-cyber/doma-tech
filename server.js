@@ -397,6 +397,9 @@ app.get('/api/products', (req,res)=>{
   res.json(products);
 });
 app.post('/api/orders', orderLimiter, (req,res)=>{
+  if (process.env.ORDER_INTAKE_ENABLED !== 'true') {
+    return res.status(503).json({ error: 'Приём заявок временно отключён. Свяжитесь с администратором сайта.' });
+  }
   const name = cleanText(req.body.name, 100);
   const contact = cleanText(req.body.contact, 160);
   const message = cleanText(req.body.message, 1000);
