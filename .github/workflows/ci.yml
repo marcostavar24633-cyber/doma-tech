@@ -37,6 +37,8 @@ jobs:
           node --check admin/admin.js
           node --check scripts/server-smoke-test.js
           node --check scripts/db-maintenance-test.js
+          node --check scripts/order-notifier.js
+          node --check scripts/order-notifier-test.js
 
       - name: Run server and database tests
         run: npm test
