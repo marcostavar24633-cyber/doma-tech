@@ -42,7 +42,7 @@ db.exec([
   "CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, contact TEXT NOT NULL, message TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
   "CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE, product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, product_name TEXT NOT NULL, unit_price INTEGER NOT NULL CHECK(unit_price >= 0), quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20), line_total INTEGER NOT NULL CHECK(line_total >= 0))",
   "CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id)"
-].join('\\n'));
+].join('\n'));
  
 const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map(column => column.name);
 if (!orderColumns.includes('consent_version')) db.exec("ALTER TABLE orders ADD COLUMN consent_version TEXT NOT NULL DEFAULT ''");
