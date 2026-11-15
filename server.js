@@ -430,14 +430,14 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
   if (!consentConfig.enabled) {
     return res.status(503).json({ error: 'Оформление временно отключено: не настроены параметры приёма и согласия.' });
   }
-  if (req.body.consent !== true || req.body.consent_version !== consentConfig.consentVersion) {
-    return res.status(400).json({ error: 'Для отправки заявки подтвердите согласие с обработкой персональных данных.' });
-  }
   const name = cleanText(req.body.name, 100);
   const contact = cleanText(req.body.contact, 160);
   const note = cleanText(req.body.message, 500);
   if (!name || !contact) return res.status(400).json({ error: 'Укажите имя и телефон или e-mail' });
   if (req.body.website) return res.status(400).json({ error: 'Некорректная заявка' }); // honeypot
+  if (req.body.consent !== true || req.body.consent_version !== consentConfig.consentVersion) {
+    return res.status(400).json({ error: 'Для отправки заявки подтвердите согласие с обработкой персональных данных.' });
+  }
   let items = [];
   let total = 0;
   let message = note;
