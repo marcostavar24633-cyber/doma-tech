@@ -443,8 +443,7 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
       total += lineTotal;
       items.push({ productId, productName: cleanText(product.name, 120), unitPrice: product.price, quantity, lineTotal });
     }
-    const summary = 'Состав заказа:\n' + items.map(item => '• ' + item.productName.slice(0, 65) + ' × ' + item.quantity + ' — ' + new Intl.NumberFormat('ru-RU').format(item.lineTotal) + ' ₽').join('\n') + '\nИтого по каталожным ценам: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
-    message = [summary, note].filter(Boolean).join('\n\n').slice(0, 1000);
+    message = note;
   }
   const createOrder = db.transaction(() => {
     const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
@@ -680,7 +679,9 @@ app.post('/api/admin/upload/cleanup', requireAdmin, csrfCheck, async (req,res)=>
   res.json({ok:true,removed});
 });
 app.get('/api/admin/orders', requireAdmin, (req,res)=>{
-  res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
+  const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+  const itemsForOrder = db.prepare('SELECT product_name,unit_price,quantity,line_total FROM order_items WHERE order_id=? ORDER BY id');
+  res.json(orders.map(order => ({ ...order, items: itemsForOrder.all(order.id) })));
 });
 app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id);
