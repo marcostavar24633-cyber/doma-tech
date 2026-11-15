@@ -172,6 +172,48 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
   applyFilters();
 })();
 
+// Интерактивный выбор моделей для справочной таблицы сравнения.
+(()=>{
+  const buttons=[...document.querySelectorAll('.compare-toggle[data-compare-id]')];
+  const table=document.querySelector('.comparison-table');
+  const status=document.getElementById('comparisonStatus');
+  const clear=document.getElementById('clearComparison');
+  if(!buttons.length||!table||!status||!clear)return;
+  const selected=new Set(buttons.map(button=>button.dataset.compareId));
+  const update=()=>{
+    const ordered=buttons.map(button=>button.dataset.compareId);
+    const selectedIndexes=ordered.map((id,index)=>selected.has(id)?index+1:null).filter(index=>index!==null);
+    [...table.rows].forEach(row=>{
+      [...row.cells].forEach((cell,index)=>{
+        if(index===0)return;
+        cell.hidden=!selectedIndexes.includes(index);
+      });
+    });
+    buttons.forEach(button=>{
+      const active=selected.has(button.dataset.compareId);
+      button.setAttribute('aria-pressed',String(active));
+      button.textContent=active?'Убрать из сравнения':'Добавить в сравнение';
+    });
+    status.textContent=selected.size
+      ?'В сравнении: '+selected.size+' '+(selected.size===1?'модель':selected.size<5?'модели':'моделей')
+      :'Модели не выбраны. Добавьте варианты кнопками на карточках.';
+    clear.disabled=selected.size===0;
+    const region=table.closest('.comparison-scroll');
+    if(region)region.hidden=selected.size===0;
+  };
+  buttons.forEach(button=>button.addEventListener('click',()=>{
+    const id=button.dataset.compareId;
+    if(selected.has(id))selected.delete(id);else selected.add(id);
+    update();
+  }));
+  clear.addEventListener('click',()=>{
+    selected.clear();
+    update();
+    buttons[0]?.focus();
+  });
+  update();
+})();
+
 
 /* Подключение управляемых настроек и каталога на серверной версии.
    На GitHub Pages API недоступен — статическая витрина продолжает работать как раньше. */
