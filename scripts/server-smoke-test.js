@@ -429,7 +429,7 @@ async function main() {
   assert.ok(renderedHtml.includes('property="og:url" content="https://example.test/"'));
   assert.ok(renderedHtml.includes('"@id":"https://example.test/#website"'));
   assert.ok(renderedHtml.includes('"url":"https://example.test/"'));
-  assert.doesNotMatch(renderedHtml, /github\\.io\\/doma-tech/);
+  assert.doesNotMatch(renderedHtml, /github\.io\/doma-tech/);
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
   const sitemapXml = await sitemap.text();
