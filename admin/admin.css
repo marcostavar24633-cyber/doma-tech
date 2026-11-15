@@ -3,3 +3,5 @@
 @media(max-width:650px){.inline-form{grid-template-columns:1fr}.category-item{grid-template-columns:42px minmax(0,1fr)}.category-item .item-actions{grid-column:2}}
 
 .order-lines{margin:12px 0;padding:12px 14px;border-radius:10px;background:#f6f7f5;border:1px solid var(--line)}.order-lines>strong{font-size:12px;color:var(--ink)}.order-lines ul{list-style:none;padding:0;margin:8px 0;display:grid;gap:7px}.order-lines li{display:flex;justify-content:space-between;gap:14px;font-size:12px;color:var(--muted)}.order-lines li span{overflow-wrap:anywhere}.order-lines li b{flex-shrink:0;color:var(--ink)}.order-lines-total{padding-top:8px!important;border-top:1px solid var(--line);font-weight:750;color:var(--ink)!important}
+
+.order-consent-record{margin:10px 0;padding:8px 10px;border-left:2px solid #b58a5b;background:#f8f5ef;color:#68777c;font-size:11px;line-height:1.5}.order-consent-record strong{color:#344b54}

@@ -32,67 +32,21 @@ const db = new Database(path.join(DATA_DIR, 'doma-tech.sqlite'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.pragma('busy_timeout = 5000');
-db.exec(`
-CREATE TABLE IF NOT EXISTS sessions (
-  sid TEXT PRIMARY KEY,
-  sess TEXT NOT NULL,
-  expires_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
-CREATE TABLE IF NOT EXISTS admins (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  price INTEGER,
-  description TEXT NOT NULL DEFAULT '',
-  image TEXT NOT NULL DEFAULT '',
-  slug TEXT NOT NULL DEFAULT '',
-  meta_title TEXT NOT NULL DEFAULT '',
-  meta_description TEXT NOT NULL DEFAULT '',
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  slug TEXT NOT NULL UNIQUE,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  description TEXT NOT NULL DEFAULT '',
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS site_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS orders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  contact TEXT NOT NULL,
-  message TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'new',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS order_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
-  product_name TEXT NOT NULL,
-  unit_price INTEGER NOT NULL CHECK(unit_price >= 0),
-  quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20),
-  line_total INTEGER NOT NULL CHECK(line_total >= 0)
-);
-CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
-`);
-
+db.exec([
+  "CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, sess TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+  "CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at)",
+  "CREATE TABLE IF NOT EXISTS admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT NOT NULL, price INTEGER, description TEXT NOT NULL DEFAULT '', image TEXT NOT NULL DEFAULT '', slug TEXT NOT NULL DEFAULT '', meta_title TEXT NOT NULL DEFAULT '', meta_description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, slug TEXT NOT NULL UNIQUE, sort_order INTEGER NOT NULL DEFAULT 0, description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, contact TEXT NOT NULL, message TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE, product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, product_name TEXT NOT NULL, unit_price INTEGER NOT NULL CHECK(unit_price >= 0), quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20), line_total INTEGER NOT NULL CHECK(line_total >= 0))",
+  "CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id)"
+].join(';\n'));
+ 
+const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map(column => column.name);
+if (!orderColumns.includes('consent_version')) db.exec("ALTER TABLE orders ADD COLUMN consent_version TEXT NOT NULL DEFAULT ''");
+if (!orderColumns.includes('consented_at')) db.exec("ALTER TABLE orders ADD COLUMN consented_at TEXT");
 const productColumns = db.prepare('PRAGMA table_info(products)').all().map(column => column.name);
 if (!productColumns.includes('slug')) db.exec("ALTER TABLE products ADD COLUMN slug TEXT NOT NULL DEFAULT ''");
 if (!productColumns.includes('meta_title')) db.exec("ALTER TABLE products ADD COLUMN meta_title TEXT NOT NULL DEFAULT ''");
@@ -402,20 +356,39 @@ app.get('/', (req,res,next) => {
     res.type('html').send(html);
   }).catch(next);
 });
+function getOrderConsentConfig() {
+  let privacyPolicyUrl = '';
+  try {
+    const parsed = new URL(String(process.env.PRIVACY_POLICY_URL || '').trim());
+    if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) privacyPolicyUrl = parsed.toString();
+  } catch {}
+  const consentVersion = cleanText(process.env.ORDER_CONSENT_VERSION, 40);
+  const enabled = process.env.ORDER_INTAKE_ENABLED === 'true' && Boolean(privacyPolicyUrl && consentVersion);
+  return { enabled, privacyPolicyUrl: enabled ? privacyPolicyUrl : '', consentVersion: enabled ? consentVersion : '' };
+}
+app.get('/api/storefront-config', (req,res)=>{
+  const config = getOrderConsentConfig();
+  res.set('Cache-Control','no-store');
+  res.json({ orderIntakeEnabled: config.enabled, privacyPolicyUrl: config.privacyPolicyUrl, consentVersion: config.consentVersion });
+});
 app.get('/api/health', (req,res)=>res.json({ ok:true, service:'DOMA TECH' }));
 app.get('/api/products', (req,res)=>{
   const products = db.prepare('SELECT id,name,category,price,description,image,slug FROM products WHERE active=1 ORDER BY created_at DESC').all();
   res.json(products);
 });
 app.post('/api/orders', orderLimiter, (req,res)=>{
-  if (process.env.ORDER_INTAKE_ENABLED !== 'true') {
-    return res.status(503).json({ error: 'Приём заявок временно отключён. Свяжитесь с администратором сайта.' });
+  const consentConfig = getOrderConsentConfig();
+  if (!consentConfig.enabled) {
+    return res.status(503).json({ error: 'Оформление временно отключено: не настроены параметры приёма и согласия.' });
   }
   const name = cleanText(req.body.name, 100);
   const contact = cleanText(req.body.contact, 160);
   const note = cleanText(req.body.message, 500);
   if (!name || !contact) return res.status(400).json({ error: 'Укажите имя и телефон или e-mail' });
   if (req.body.website) return res.status(400).json({ error: 'Некорректная заявка' }); // honeypot
+  if (req.body.consent !== true || req.body.consent_version !== consentConfig.consentVersion) {
+    return res.status(400).json({ error: 'Для отправки заявки подтвердите согласие с обработкой персональных данных.' });
+  }
   let items = [];
   let total = 0;
   let message = note;
@@ -446,7 +419,7 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
     message = note;
   }
   const createOrder = db.transaction(() => {
-    const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
+    const result = db.prepare('INSERT INTO orders(name,contact,message,consent_version,consented_at) VALUES(?,?,?,?,?)').run(name,contact,message,consentConfig.consentVersion,new Date().toISOString());
     if (items.length) {
       const insertItem = db.prepare('INSERT INTO order_items(order_id,product_id,product_name,unit_price,quantity,line_total) VALUES(?,?,?,?,?,?)');
       for (const item of items) insertItem.run(result.lastInsertRowid,item.productId,item.productName,item.unitPrice,item.quantity,item.lineTotal);
