@@ -32,67 +32,18 @@ const db = new Database(path.join(DATA_DIR, 'doma-tech.sqlite'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.pragma('busy_timeout = 5000');
-db.exec(`
-CREATE TABLE IF NOT EXISTS sessions (
-  sid TEXT PRIMARY KEY,
-  sess TEXT NOT NULL,
-  expires_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
-CREATE TABLE IF NOT EXISTS admins (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS products (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  price INTEGER,
-  description TEXT NOT NULL DEFAULT '',
-  image TEXT NOT NULL DEFAULT '',
-  slug TEXT NOT NULL DEFAULT '',
-  meta_title TEXT NOT NULL DEFAULT '',
-  meta_description TEXT NOT NULL DEFAULT '',
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  slug TEXT NOT NULL UNIQUE,
-  sort_order INTEGER NOT NULL DEFAULT 0,
-  description TEXT NOT NULL DEFAULT '',
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS site_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS orders (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  contact TEXT NOT NULL,
-  message TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'new',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE TABLE IF NOT EXISTS order_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
-  product_name TEXT NOT NULL,
-  unit_price INTEGER NOT NULL CHECK(unit_price >= 0),
-  quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20),
-  line_total INTEGER NOT NULL CHECK(line_total >= 0)
-);
-CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id);
-`);
-
+db.exec([
+  "CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, sess TEXT NOT NULL, expires_at INTEGER NOT NULL)",
+  "CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at)",
+  "CREATE TABLE IF NOT EXISTS admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT NOT NULL, price INTEGER, description TEXT NOT NULL DEFAULT '', image TEXT NOT NULL DEFAULT '', slug TEXT NOT NULL DEFAULT '', meta_title TEXT NOT NULL DEFAULT '', meta_description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, slug TEXT NOT NULL UNIQUE, sort_order INTEGER NOT NULL DEFAULT 0, description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, contact TEXT NOT NULL, message TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE, product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, product_name TEXT NOT NULL, unit_price INTEGER NOT NULL CHECK(unit_price >= 0), quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 20), line_total INTEGER NOT NULL CHECK(line_total >= 0))",
+  "CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id)"
+].join('\\n'));
+ 
 const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map(column => column.name);
 if (!orderColumns.includes('consent_version')) db.exec("ALTER TABLE orders ADD COLUMN consent_version TEXT NOT NULL DEFAULT ''");
 if (!orderColumns.includes('consented_at')) db.exec("ALTER TABLE orders ADD COLUMN consented_at TEXT");
