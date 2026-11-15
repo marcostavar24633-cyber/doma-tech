@@ -275,10 +275,139 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           price.textContent = product.price == null ? 'Цена по запросу' : new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽';
           info.append(category, name, description, price);
           productLink.append(visual, info);
-          card.append(productLink);
+
+          const addButton = document.createElement('button');
+          addButton.className = 'cart-add-button';
+          addButton.type = 'button';
+          addButton.textContent = product.price == null ? 'Цена уточняется' : 'Добавить в корзину';
+          addButton.disabled = product.price == null;
+          addButton.setAttribute('aria-label', product.price == null ? 'Добавление недоступно: цена не указана' : 'Добавить ' + product.name + ' в корзину');
+          addButton.addEventListener('click', () => {
+            const entry = cart.find(item => item.productId === Number(product.id));
+            if (!entry && cart.length >= 10) {
+              notify('В корзине может быть не более 10 разных товаров.');
+              return;
+            }
+            if (entry && entry.quantity >= 20) {
+              notify('Максимум 20 единиц одного товара.');
+              return;
+            }
+            if (entry) entry.quantity += 1;
+            else cart.push({ productId: Number(product.id), quantity: 1 });
+            saveCart();
+            renderCart();
+            notify('Товар добавлен в корзину.');
+          });
+          card.append(productLink, addButton);
           grid.append(card);
         });
-        section.replaceChildren(heading, grid);
+
+        const cartPanel = document.createElement('aside');
+        cartPanel.className = 'managed-cart';
+        cartPanel.id = 'managed-cart';
+        cartPanel.setAttribute('aria-labelledby', 'managed-cart-title');
+        const cartHeader = document.createElement('div');
+        cartHeader.className = 'managed-cart-header';
+        const cartTitle = document.createElement('h3');
+        cartTitle.id = 'managed-cart-title';
+        cartTitle.textContent = 'Ваша корзина';
+        const cartCount = document.createElement('span');
+        cartCount.className = 'managed-cart-count';
+        cartCount.setAttribute('aria-live', 'polite');
+        cartHeader.append(cartTitle, cartCount);
+        const cartList = document.createElement('div');
+        cartList.className = 'managed-cart-list';
+        const cartFooter = document.createElement('div');
+        cartFooter.className = 'managed-cart-footer';
+        const cartTotal = document.createElement('strong');
+        cartTotal.className = 'managed-cart-total';
+        const cartNotice = document.createElement('p');
+        cartNotice.className = 'managed-cart-notice';
+        cartNotice.textContent = 'Демонстрационный режим: приём заказов пока отключён. Итог рассчитан по ценам, указанным в каталоге, и требует подтверждения.';
+        const checkoutButton = document.createElement('button');
+        checkoutButton.type = 'button';
+        checkoutButton.className = 'managed-cart-checkout';
+        checkoutButton.disabled = true;
+        checkoutButton.textContent = 'Оформление временно недоступно';
+        cartFooter.append(cartTotal, cartNotice, checkoutButton);
+        cartPanel.append(cartHeader, cartList, cartFooter);
+
+        let cart = [];
+        try {
+          const saved = JSON.parse(localStorage.getItem('doma-tech-cart') || '[]');
+          if (Array.isArray(saved)) cart = saved
+            .filter(item => Number.isSafeInteger(Number(item.productId)) && Number(item.productId) > 0
+              && Number.isSafeInteger(Number(item.quantity)) && Number(item.quantity) >= 1 && Number(item.quantity) <= 20)
+            .slice(0, 10)
+            .map(item => ({ productId: Number(item.productId), quantity: Number(item.quantity) }));
+        } catch {
+          cart = [];
+        }
+        const saveCart = () => {
+          try { localStorage.setItem('doma-tech-cart', JSON.stringify(cart)); } catch {}
+        };
+        const renderCart = () => {
+          const productById = new Map(products.map(item => [Number(item.id), item]));
+          cartList.replaceChildren();
+          const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+          cartCount.textContent = count + (count === 1 ? ' товар' : count >= 2 && count <= 4 ? ' товара' : ' товаров');
+          let total = 0;
+          if (!cart.length) {
+            const empty = document.createElement('p');
+            empty.className = 'managed-cart-empty';
+            empty.textContent = 'Корзина пока пуста. Добавьте товары из каталога выше.';
+            cartList.append(empty);
+          }
+          cart.forEach(item => {
+            const product = productById.get(item.productId);
+            const row = document.createElement('div');
+            row.className = 'managed-cart-row';
+            const details = document.createElement('div');
+            details.className = 'managed-cart-product';
+            const itemName = document.createElement('strong');
+            itemName.textContent = product ? product.name : 'Товар больше недоступен';
+            const itemPrice = document.createElement('small');
+            if (product && product.price != null) {
+              const lineTotal = Number(product.price) * item.quantity;
+              total += lineTotal;
+              itemPrice.textContent = new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽ × ' + item.quantity + ' = ' + new Intl.NumberFormat('ru-RU').format(lineTotal) + ' ₽';
+            } else {
+              itemPrice.textContent = 'Цена не подтверждена — удалить позицию';
+            }
+            details.append(itemName, itemPrice);
+            const controls = document.createElement('div');
+            controls.className = 'managed-cart-controls';
+            const decrease = document.createElement('button');
+            decrease.type = 'button'; decrease.textContent = '−'; decrease.setAttribute('aria-label', 'Уменьшить количество');
+            decrease.addEventListener('click', () => {
+              item.quantity -= 1;
+              if (item.quantity < 1) cart = cart.filter(entry => entry !== item);
+              saveCart(); renderCart();
+            });
+            const quantity = document.createElement('span');
+            quantity.textContent = String(item.quantity);
+            const increase = document.createElement('button');
+            increase.type = 'button'; increase.textContent = '+'; increase.setAttribute('aria-label', 'Увеличить количество');
+            increase.disabled = item.quantity >= 20 || !product || product.price == null;
+            increase.addEventListener('click', () => {
+              if (item.quantity >= 20) return;
+              item.quantity += 1; saveCart(); renderCart();
+            });
+            const remove = document.createElement('button');
+            remove.type = 'button'; remove.className = 'managed-cart-remove'; remove.textContent = 'Удалить';
+            remove.addEventListener('click', () => {
+              cart = cart.filter(entry => entry !== item); saveCart(); renderCart();
+            });
+            controls.append(decrease, quantity, increase, remove);
+            row.append(details, controls);
+            cartList.append(row);
+          });
+          cartTotal.textContent = 'Итого по каталогу: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
+          checkoutButton.disabled = true;
+        };
+        saveCart();
+        section.replaceChildren(heading, grid, cartPanel);
+        renderCart();
       }
     }
   } catch {
