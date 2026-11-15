@@ -62,6 +62,11 @@ async function req(url, options={}) { return fetch(base+url,{...options,signal:A
     assert.ok(saved);
     assert.match(saved.message,/Dishwasher premium/);
     assert.match(saved.message,/25\s?000/);
+    assert.equal(saved.items.length,1,'Admin API must return structured order items');
+    assert.equal(saved.items[0].product_name,'Dishwasher premium');
+    assert.equal(saved.items[0].unit_price,12500);
+    assert.equal(saved.items[0].quantity,2);
+    assert.equal(saved.items[0].line_total,25000);
     const invalidQuantity=await req('/api/orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
       name:'Test',contact:'test@example.invalid',items:[{product_id:product.id,quantity:21}]
     })});
