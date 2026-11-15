@@ -122,24 +122,29 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
   if(sign)sign.textContent=item.open?'−':'+';
 }));
 
-// Локальная фильтрация демонстрационных моделей: без запросов и хранения данных.
+// Локальная фильтрация и поиск демонстрационных моделей: без запросов и хранения данных.
 (()=>{
-  const cards=[...document.querySelectorAll('.market-card')];
+  const cards=[...document.querySelectorAll('#market-examples .market-card')];
   const type=document.getElementById('filterType');
   const width=document.getElementById('filterWidth');
   const budget=document.getElementById('filterBudget');
   const sort=document.getElementById('sortModels');
+  const search=document.getElementById('searchModels');
   const result=document.getElementById('filterResult');
   const reset=document.getElementById('resetFilters');
-  if(!cards.length||!type||!width||!budget||!sort||!result||!reset)return;
+  if(!cards.length||!type||!width||!budget||!sort||!search||!result||!reset)return;
   const grid=cards[0].parentElement;
+  const normalize=value=>String(value||'').toLocaleLowerCase('ru-RU').replace(/ё/g,'е').trim();
   const matchesBudget=price=>budget.value==='under30'?price<30000:budget.value==='30to50'?price>=30000&&price<=50000:budget.value==='over50'?price>50000:true;
   const applyFilters=()=>{
+    const query=normalize(search.value);
     let visible=0;
     cards.forEach(card=>{
+      const searchable=normalize(card.textContent);
       const show=(type.value==='all'||card.dataset.type===type.value)
         &&(width.value==='all'||card.dataset.width===width.value)
-        &&matchesBudget(Number(card.dataset.price));
+        &&matchesBudget(Number(card.dataset.price))
+        &&(!query||searchable.includes(query));
       card.hidden=!show;
       if(show)visible++;
     });
@@ -150,17 +155,19 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
         :cards.indexOf(a)-cards.indexOf(b));
     ordered.forEach(card=>grid.appendChild(card));
     result.textContent=visible
-      ?'Показано моделей: '+visible+' из '+cards.length
-      :'По выбранным параметрам моделей не найдено. Измените фильтры.';
+      ?'Показано моделей: '+visible+' из '+cards.length+(query?' · поиск: «'+search.value.trim()+'»':'')
+      :'По запросу и выбранным параметрам моделей не найдено. Измените поиск или фильтры.';
   };
   [type,width,budget,sort].forEach(control=>control.addEventListener('change',applyFilters));
+  search.addEventListener('input',applyFilters);
   reset.addEventListener('click',()=>{
     type.value='all';
     width.value='all';
     budget.value='all';
     sort.value='default';
+    search.value='';
     applyFilters();
-    type.focus();
+    search.focus();
   });
   applyFilters();
 })();
