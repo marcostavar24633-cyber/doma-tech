@@ -38,7 +38,14 @@
     const root = $('#order-list');
     if (!state.orders.length) { root.innerHTML = '<p class="muted">Заявок пока нет.</p>'; return; }
     const labels = {new:'Новая',in_progress:'В работе',completed:'Завершена',cancelled:'Отменена'};
-    root.innerHTML = state.orders.map((o) => '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p><p>' + esc(o.message || 'Без комментария') + '</p><p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>').join('');
+    root.innerHTML = state.orders.map((o) => {
+      const items = Array.isArray(o.items) ? o.items : [];
+      const itemMarkup = items.length
+        ? '<section class="order-lines"><strong>Товары в заказе</strong><ul>' + items.map((item) => '<li><span>' + esc(item.product_name) + ' × ' + Number(item.quantity) + '</span><span>' + esc(money(item.line_total)) + '</span></li>').join('') + '</ul><p class="order-lines-total"><strong>Сумма по снимку цен:</strong> ' + esc(money(items.reduce((sum,item) => sum + Number(item.line_total || 0),0))) + '</p></section>'
+        : '';
+      const messageMarkup = o.message ? '<p class="order-message">' + esc(o.message) + '</p>' : '<p class="order-message muted">Без комментария</p>';
+      return '<article class="order-item"><div><h3>Заявка №' + Number(o.id) + ' · ' + esc(o.name) + '</h3><p><strong>Контакт:</strong> ' + esc(o.contact) + '</p>' + itemMarkup + messageMarkup + '<p>' + esc(o.created_at) + '</p></div><label>Статус<select data-order="' + Number(o.id) + '">' + Object.entries(labels).map(([value,label]) => '<option value="' + value + '"' + (o.status === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select></label></article>';
+    }).join('');
   }
   function renderCategories() {
     const root = $('#category-list');
