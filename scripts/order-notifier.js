@@ -67,7 +67,7 @@ async function notifyOrder(order, env = process.env) {
         }
         delivered += 1;
       } catch (error) {
-        errors.push(error.name === 'AbortError' ? 'Order Telegram notification timed out.' : error.message);
+        errors.push(error.name === 'AbortError' ? 'Order Telegram notification timed out.' : 'Order Telegram delivery failed (network or API error).');
       } finally {
         clearTimeout(timer);
       }
@@ -87,7 +87,7 @@ async function notifyOrder(order, env = process.env) {
       });
       delivered += 1;
     } catch (error) {
-      errors.push(error.name === 'AbortError' ? 'Order webhook notification timed out.' : error.message);
+      errors.push(error.name === 'AbortError' ? 'Order webhook notification timed out.' : 'Order webhook delivery failed (network or endpoint error).');
     }
   }
 
