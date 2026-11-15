@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { notifyOrder } = require('./scripts/order-notifier');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -406,6 +407,10 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
   if (!name || !contact) return res.status(400).json({ error: 'Укажите имя и телефон или e-mail' });
   if (req.body.website) return res.status(400).json({ error: 'Некорректная заявка' }); // honeypot
   const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
+  const created = db.prepare('SELECT created_at FROM orders WHERE id=?').get(result.lastInsertRowid);
+  void notifyOrder({ id: Number(result.lastInsertRowid), createdAt: created && created.created_at }).then(notification => {
+    if (notification.errors.length) process.stderr.write('Order notification: ' + notification.errors.join('; ') + '\n');
+  }).catch(error => process.stderr.write('Order notification failed: ' + error.message + '\n'));
   res.status(201).json({ ok:true, id:result.lastInsertRowid, message:'Заявка принята' });
 });
 
