@@ -62,6 +62,17 @@ async function main() {
   assert.equal(health.status, 200);
   assert.equal((await health.json()).ok, true);
 
+  // Before a real HTTPS hostname is configured, server-rendered HTML must not
+  // advertise the GitHub Pages demo URL as its canonical or structured-data origin.
+  const unconfiguredHome = await request('/');
+  assert.equal(unconfiguredHome.status, 200);
+  const unconfiguredHtml = await unconfiguredHome.text();
+  assert.doesNotMatch(unconfiguredHtml, /rel="canonical"/);
+  assert.doesNotMatch(unconfiguredHtml, /property="og:url"/);
+  assert.doesNotMatch(unconfiguredHtml, /github\\.io\\/doma-tech/);
+  assert.doesNotMatch(unconfiguredHtml, /application\\/ld\\+json/);
+  assert.match(unconfiguredHtml, /name="robots" content="noindex,follow"/);
+
   const products = await request('/api/products');
   assert.equal(products.status, 200);
   assert.ok(Array.isArray(await products.json()));
@@ -415,6 +426,10 @@ async function main() {
   assert.ok(renderedHtml.includes('<title>Test SEO title</title>'));
   assert.match(renderedHtml, /name="robots" content="index,follow"/);
   assert.ok(renderedHtml.includes('rel="canonical" href="https://example.test/"'));
+  assert.ok(renderedHtml.includes('property="og:url" content="https://example.test/"'));
+  assert.ok(renderedHtml.includes('"@id":"https://example.test/#website"'));
+  assert.ok(renderedHtml.includes('"url":"https://example.test/"'));
+  assert.doesNotMatch(renderedHtml, /github\\.io\\/doma-tech/);
   const sitemap = await request('/sitemap.xml');
   assert.equal(sitemap.status, 200);
   const sitemapXml = await sitemap.text();
