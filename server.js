@@ -680,7 +680,9 @@ app.post('/api/admin/upload/cleanup', requireAdmin, csrfCheck, async (req,res)=>
   res.json({ok:true,removed});
 });
 app.get('/api/admin/orders', requireAdmin, (req,res)=>{
-  res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
+  const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+  const itemsForOrder = db.prepare('SELECT product_name,unit_price,quantity,line_total FROM order_items WHERE order_id=? ORDER BY id');
+  res.json(orders.map(order => ({ ...order, items: itemsForOrder.all(order.id) })));
 });
 app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id);
