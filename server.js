@@ -409,8 +409,8 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
   const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
   const created = db.prepare('SELECT created_at FROM orders WHERE id=?').get(result.lastInsertRowid);
   void notifyOrder({ id: Number(result.lastInsertRowid), createdAt: created && created.created_at }).then(notification => {
-    if (notification.errors.length) process.stderr.write('Order notification: ' + notification.errors.join('; ') + '\\n');
-  }).catch(error => process.stderr.write('Order notification failed: ' + error.message + '\\n'));
+    if (notification.errors.length) process.stderr.write('Order notification: ' + notification.errors.join('; ') + '\n');
+  }).catch(error => process.stderr.write('Order notification failed: ' + error.message + '\n'));
   res.status(201).json({ ok:true, id:result.lastInsertRowid, message:'Заявка принята' });
 });
 
