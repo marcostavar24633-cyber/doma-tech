@@ -385,7 +385,7 @@ app.get('/', (req,res,next) => {
       // demo URL as the canonical origin or structured-data identity.
       html = html.replace(/<link rel="canonical" href="[^"]*">/i, '');
       html = html.replace(/<meta property="og:url" content="[^"]*">/i, '');
-      html = html.replace(/<script type="application\\/ld\\+json">[\\s\\S]*?<\\/script>/i, '');
+      html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, '');
     }
     res.set('Cache-Control','no-cache');
     res.type('html').send(html);
