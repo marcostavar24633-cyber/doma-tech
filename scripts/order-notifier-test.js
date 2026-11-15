@@ -16,7 +16,7 @@ async function main() {
     };
 
     assert.equal(buildOrderMessage({ id: 17, createdAt: '2026-11-15 12:00:00' }),
-      'DOMA TECH: новая заявка\\nНомер: #17\\nСоздана: 2026-11-15 12:00:00');
+      'DOMA TECH: новая заявка\nНомер: #17\nСоздана: 2026-11-15 12:00:00');
     assert.throws(() => buildOrderMessage({ id: 'bad' }), /valid order id/i);
 
     const noChannels = await notifyOrder({ id: 1 }, {});
@@ -29,7 +29,7 @@ async function main() {
     );
     assert.equal(telegram.delivered, 1);
     assert.equal(calls.length, 1);
-    assert.match(calls[0].url, /api\\.telegram\\.org/);
+    assert.match(calls[0].url, /api\.telegram\.org/);
     assert.match(calls[0].body.text, /#17/);
     assert.doesNotMatch(calls[0].body.text, /Private Name|70000000000/);
 
@@ -60,13 +60,13 @@ async function main() {
     assert.equal(incompleteTelegram.delivered, 0);
     assert.match(incompleteTelegram.errors[0], /requires both/);
 
-    process.stdout.write('Order notification tests passed\\n');
+    process.stdout.write('Order notification tests passed\n');
   } finally {
     global.fetch = originalFetch;
   }
 }
 
 main().catch(error => {
-  process.stderr.write(`${error.stack || error}\\n`);
+  process.stderr.write(`${error.stack || error}\n`);
   process.exitCode = 1;
 });
