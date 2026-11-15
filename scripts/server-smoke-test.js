@@ -96,7 +96,25 @@ async function main() {
   });
   assert.equal(disabledHoneypotOrder.status, 503, 'Disabled request intake must not accept honeypot submissions either');
 
-  // Verify the explicit opt-in still permits controlled server-side testing.
+  // A non-HTTPS privacy URL must never activate checkout.
+  await stopServer();
+  await startServer({ ORDER_INTAKE_ENABLED: 'true', PRIVACY_POLICY_URL: 'http://example.invalid/privacy', ORDER_CONSENT_VERSION: '2026-11-15-v1' });
+  let invalidConfigReady = false;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try { if ((await request('/api/health')).ok) { invalidConfigReady = true; break; } } catch {}
+    await delay(250);
+  }
+  assert.equal(invalidConfigReady, true, `Server did not start for invalid-URL check:\\n${output}`);
+  const invalidStorefront = await request('/api/storefront-config');
+  assert.equal((await invalidStorefront.json()).orderIntakeEnabled, false);
+  const invalidConfigOrder = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', consent: true, consent_version: '2026-11-15-v1' })
+  });
+  assert.equal(invalidConfigOrder.status, 503);
+
+  // Then test a configured HTTPS policy and matching consent version.
   await stopServer();
   await startServer({ ORDER_INTAKE_ENABLED: 'true', PRIVACY_POLICY_URL: 'https://example.invalid/privacy', ORDER_CONSENT_VERSION: '2026-11-15-v1' });
   let intakeReady = false;
@@ -132,7 +150,7 @@ async function main() {
   const badOrder = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot' })
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot', consent: true, consent_version: '2026-11-15-v1' })
   });
   assert.equal(badOrder.status, 400, 'Honeypot must reject filled website field when intake is enabled');
 
