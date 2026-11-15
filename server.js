@@ -374,9 +374,18 @@ app.get('/', (req,res,next) => {
     html = html.replace(/<meta name="twitter:description" content="[^"]*">/i, '<meta name="twitter:description" content="' + escapeAttr(settings.meta_description) + '">');
     html = html.replace(/<meta property="og:site_name" content="[^"]*">/i, '<meta property="og:site_name" content="' + escapeAttr(settings.site_title) + '">');
     html = html.replace(/<meta name="robots" content="[^"]*">/i, '<meta name="robots" content="' + robots + '">');
+    const demoSiteUrl = 'https://marcostavar24633-cyber.github.io/doma-tech';
     if (siteUrl) {
+      // Rewrite every embedded demo origin, including JSON-LD @id/url values.
+      html = html.replaceAll(demoSiteUrl, siteUrl);
       html = html.replace(/<link rel="canonical" href="[^"]*">/i, '<link rel="canonical" href="' + escapeAttr(siteUrl + '/') + '">');
       html = html.replace(/<meta property="og:url" content="[^"]*">/i, '<meta property="og:url" content="' + escapeAttr(siteUrl + '/') + '">');
+    } else {
+      // A production hostname is unknown until configured: never publish the GitHub Pages
+      // demo URL as the canonical origin or structured-data identity.
+      html = html.replace(/<link rel="canonical" href="[^"]*">/i, '');
+      html = html.replace(/<meta property="og:url" content="[^"]*">/i, '');
+      html = html.replace(/<script type="application\\/ld\\+json">[\\s\\S]*?<\\/script>/i, '');
     }
     res.set('Cache-Control','no-cache');
     res.type('html').send(html);
