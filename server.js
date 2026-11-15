@@ -680,7 +680,17 @@ app.post('/api/admin/upload/cleanup', requireAdmin, csrfCheck, async (req,res)=>
   res.json({ok:true,removed});
 });
 app.get('/api/admin/orders', requireAdmin, (req,res)=>{
-  res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
+  const orders = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+  if (!orders.length) return res.json([]);
+  const ids = orders.map(order => order.id);
+  const placeholders = ids.map(() => '?').join(',');
+  const items = db.prepare('SELECT order_id,product_id,product_name,unit_price,quantity,line_total FROM order_items WHERE order_id IN (' + placeholders + ') ORDER BY id').all(...ids);
+  const itemsByOrder = new Map();
+  for (const item of items) {
+    if (!itemsByOrder.has(item.order_id)) itemsByOrder.set(item.order_id, []);
+    itemsByOrder.get(item.order_id).push(item);
+  }
+  res.json(orders.map(order => ({ ...order, items: itemsByOrder.get(order.id) || [] })));
 });
 app.patch('/api/admin/orders/:id', requireAdmin, csrfCheck, (req,res)=>{
   const id=Number(req.params.id);
