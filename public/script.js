@@ -284,6 +284,10 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           addButton.setAttribute('aria-label', product.price == null ? 'Добавление недоступно: цена не указана' : 'Добавить ' + product.name + ' в корзину');
           addButton.addEventListener('click', () => {
             const entry = cart.find(item => item.productId === Number(product.id));
+            if (!entry && cart.length >= 10) {
+              notify('В корзине может быть не более 10 разных товаров.');
+              return;
+            }
             if (entry && entry.quantity >= 20) {
               notify('Максимум 20 единиц одного товара.');
               return;
