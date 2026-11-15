@@ -352,7 +352,6 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
           const count = cart.reduce((sum, item) => sum + item.quantity, 0);
           cartCount.textContent = count + (count === 1 ? ' товар' : count >= 2 && count <= 4 ? ' товара' : ' товаров');
           let total = 0;
-          let hasUnavailable = false;
           if (!cart.length) {
             const empty = document.createElement('p');
             empty.className = 'managed-cart-empty';
@@ -374,7 +373,6 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
               itemPrice.textContent = new Intl.NumberFormat('ru-RU').format(product.price) + ' ₽ × ' + item.quantity + ' = ' + new Intl.NumberFormat('ru-RU').format(lineTotal) + ' ₽';
             } else {
               itemPrice.textContent = 'Цена не подтверждена — удалить позицию';
-              hasUnavailable = true;
             }
             details.append(itemName, itemPrice);
             const controls = document.createElement('div');
@@ -405,7 +403,7 @@ document.querySelectorAll('.faq details').forEach(item=>item.addEventListener('t
             cartList.append(row);
           });
           cartTotal.textContent = 'Итого по каталогу: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
-          checkoutButton.disabled = !cart.length || hasUnavailable;
+          checkoutButton.disabled = true;
         };
         saveCart();
         section.replaceChildren(heading, grid, cartPanel);
