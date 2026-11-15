@@ -92,7 +92,7 @@ async function main() {
   const disabledHoneypotOrder = await request('/api/orders', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot' })
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', website: 'bot', consent: true, consent_version: '2026-11-15-v1' })
   });
   assert.equal(disabledHoneypotOrder.status, 503, 'Disabled request intake must not accept honeypot submissions either');
 
@@ -121,6 +121,13 @@ async function main() {
     body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', message: 'No consent' })
   });
   assert.equal(missingConsent.status, 400, 'Consent is required before accepting personal data');
+
+  const staleConsent = await request('/api/orders', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Test', contact: 'test@example.invalid', consent: true, consent_version: 'old-version' })
+  });
+  assert.equal(staleConsent.status, 400, 'A stale consent version must not be accepted');
 
   const badOrder = await request('/api/orders', {
     method: 'POST',
