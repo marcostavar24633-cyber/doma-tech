@@ -443,8 +443,7 @@ app.post('/api/orders', orderLimiter, (req,res)=>{
       total += lineTotal;
       items.push({ productId, productName: cleanText(product.name, 120), unitPrice: product.price, quantity, lineTotal });
     }
-    const summary = 'Состав заказа:\n' + items.map(item => '• ' + item.productName.slice(0, 65) + ' × ' + item.quantity + ' — ' + new Intl.NumberFormat('ru-RU').format(item.lineTotal) + ' ₽').join('\n') + '\nИтого по каталожным ценам: ' + new Intl.NumberFormat('ru-RU').format(total) + ' ₽';
-    message = [summary, note].filter(Boolean).join('\n\n').slice(0, 1000);
+    message = note;
   }
   const createOrder = db.transaction(() => {
     const result = db.prepare('INSERT INTO orders(name,contact,message) VALUES(?,?,?)').run(name,contact,message);
