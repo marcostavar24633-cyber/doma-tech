@@ -17,7 +17,7 @@
     });
   }
   const hero = document.querySelector('.hero');
-  const visual = document.querySelector('.dishwasher-art');
+  const visual = document.querySelector('.hero-photo');
   if (!reduce && hero && visual && window.matchMedia('(pointer:fine)').matches) {
     let frame = 0;
     hero.addEventListener('pointermove', (event) => {
@@ -26,7 +26,7 @@
         const bounds = hero.getBoundingClientRect();
         const x = (event.clientX - bounds.left) / bounds.width - 0.5;
         const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-        visual.style.transform = 'perspective(1300px) rotateY(' + (-8 + x * 3).toFixed(2) + 'deg) rotateX(' + (y * -2).toFixed(2) + 'deg) translateY(-4px) scale(1.12)';
+        visual.style.transform = 'scale(1.045) translate3d(' + (x * -7).toFixed(2) + 'px,' + (y * -5).toFixed(2) + 'px,0)';
       });
     }, { passive: true });
     hero.addEventListener('pointerleave', () => { visual.style.transform = ''; });
