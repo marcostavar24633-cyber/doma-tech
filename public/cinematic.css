@@ -377,3 +377,30 @@ body.motion-ready .is-visible{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){
  .finder-form-premium .finder-field select{transition:none}
 }
+
+
+/* Editorial FAQ refinement — visual only, keeps native details interaction. */
+.faq{position:relative;isolation:isolate;padding-block:clamp(76px,9vw,132px);overflow:hidden}
+.faq:before{content:"";position:absolute;z-index:-1;inset:0 0 auto;height:58%;pointer-events:none;background:radial-gradient(ellipse at 76% 0%,rgba(198,164,119,.12),transparent 64%)}
+.faq .section-heading{align-items:end;margin-bottom:clamp(30px,4vw,54px)}
+.faq .section-heading .eyebrow{letter-spacing:.24em;color:#d1b38c}
+.faq .section-heading h2{max-width:620px}
+.faq .section-heading>p{max-width:330px;line-height:1.8;color:#bdb6aa}
+.faq details{position:relative;margin:0 0 12px;padding:0 24px;border:1px solid rgba(226,208,181,.15);border-radius:18px;background:linear-gradient(110deg,rgba(255,255,255,.035),rgba(255,255,255,.012));transition:border-color .35s ease,background .35s ease,transform .35s ease}
+.faq details:hover{border-color:rgba(218,185,143,.38);transform:translateY(-1px)}
+.faq details[open]{border-color:rgba(218,185,143,.42);background:linear-gradient(110deg,rgba(205,172,130,.09),rgba(255,255,255,.018))}
+.faq details summary{display:flex;align-items:center;justify-content:space-between;gap:22px;min-height:78px;padding:18px 0;list-style:none;cursor:pointer;color:#f0e9dc;font:600 clamp(16px,1.6vw,19px) var(--dt-display)}
+.faq details summary::-webkit-details-marker{display:none}
+.faq details summary span{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border:1px solid rgba(218,185,143,.28);border-radius:50%;font:400 20px/1 sans-serif;color:#d7b990;transition:transform .3s ease,background .3s ease}
+.faq details[open] summary span{transform:rotate(45deg);background:rgba(218,185,143,.12)}
+.faq details p{max-width:760px;margin:0;padding:0 46px 24px 0;font-size:14px;line-height:1.85;color:#c2bcb2}
+@media(max-width:700px){
+ .faq{padding-block:68px}
+ .faq .section-heading{display:block;margin-bottom:28px}
+ .faq .section-heading>p{margin-top:14px}
+ .faq details{padding-inline:17px;border-radius:15px;margin-bottom:9px}
+ .faq details summary{min-height:70px;gap:14px;font-size:15px;line-height:1.45}
+ .faq details summary span{flex-basis:30px;width:30px;height:30px}
+ .faq details p{padding:0 0 20px;font-size:13px;line-height:1.75}
+}
+@media(prefers-reduced-motion:reduce){.faq details,.faq details summary span{transition:none}.faq details:hover{transform:none}}
