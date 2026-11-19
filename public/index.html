@@ -124,15 +124,22 @@
       </div>
     </section>
 
-    <section class="section finder" id="choose">
-      <div class="finder-intro"><div class="eyebrow eyebrow-light">ПОДБОР ПО ПАРАМЕТРАМ</div><h2>Техника, которая<br>подходит вашему дому.</h2><p>Ответьте на несколько вопросов. Мы подготовим направление поиска — без случайного выбора.</p><div class="finder-stamp">YOUR<br><b>HOME</b><br>YOUR CHOICE</div></div>
-      <form class="finder-form" id="finderForm">
-        <label>Какой тип установки рассматриваете?<select name="type"><option value="Пока не определился">Пока не определился</option><option>Встраиваемая</option><option>Отдельностоящая</option><option>Компактная</option></select></label>
-        <label>Какая ширина подходит?<select name="width"><option value="Пока не знаю">Пока не знаю</option><option>Около 45 см</option><option>Около 60 см</option><option>Нужна компактная модель</option></select></label>
-        <label>Для кого выбираете?<select name="family"><option>Для одного-двух человек</option><option>Для семьи из 3–4 человек</option><option>Для большой семьи</option><option>Пока не определился</option></select></label>
-        <label>На какой бюджет ориентируетесь?<select name="budget"><option>Пока не определился</option><option>Экономичный</option><option>Средний</option><option>Премиальный</option></select></label>
-        <button class="button button-gold button-wide" type="submit">Сформировать мой профиль <span>→</span></button>
-        <p class="form-hint">Подбор работает локально в браузере. Контактные данные не нужны.</p>
+    <section class="section finder finder-cinematic" id="choose">
+      <div class="finder-intro">
+        <div class="eyebrow eyebrow-light">ПЕРСОНАЛЬНЫЙ ПОДБОР · 01—04</div>
+        <h2>Техника, которая<br><em>подходит вашему дому.</em></h2>
+        <p>Четыре коротких ориентира помогут сузить выбор. Необязательно знать все ответы заранее — можно оставить варианты «пока не определился».</p>
+        <div class="finder-editorial-note"><span>DOMA TECH / SELECTION STUDIO</span><b>Выбор начинается<br>с вашего пространства.</b><small>Без регистрации и передачи контактов</small></div>
+      </div>
+      <form class="finder-form finder-form-premium" id="finderForm">
+        <div class="finder-form-top"><div><span class="finder-form-kicker">ВАШ СЦЕНАРИЙ</span><h3>Расскажите о своей кухне</h3></div><span class="finder-count">04 <i>ВОПРОСА</i></span></div>
+        <div class="finder-progress" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div class="finder-field"><label for="finderType"><span class="finder-field-index">01</span><span>Какой тип установки рассматриваете?</span></label><select id="finderType" name="type"><option value="Пока не определился">Пока не определился</option><option>Встраиваемая</option><option>Отдельностоящая</option><option>Компактная</option></select></div>
+        <div class="finder-field"><label for="finderWidth"><span class="finder-field-index">02</span><span>Какая ширина подходит?</span></label><select id="finderWidth" name="width"><option value="Пока не знаю">Пока не знаю</option><option>Около 45 см</option><option>Около 60 см</option><option>Нужна компактная модель</option></select></div>
+        <div class="finder-field"><label for="finderFamily"><span class="finder-field-index">03</span><span>Для кого выбираете?</span></label><select id="finderFamily" name="family"><option>Для одного-двух человек</option><option>Для семьи из 3–4 человек</option><option>Для большой семьи</option><option>Пока не определился</option></select></div>
+        <div class="finder-field"><label for="finderBudget"><span class="finder-field-index">04</span><span>На какой бюджет ориентируетесь?</span></label><select id="finderBudget" name="budget"><option>Пока не определился</option><option>Экономичный</option><option>Средний</option><option>Премиальный</option></select></div>
+        <button class="button button-gold button-wide finder-submit" type="submit">Сформировать мой профиль <span>→</span></button>
+        <p class="form-hint"><span aria-hidden="true">✳</span> Подбор работает локально в браузере. Контактные данные не нужны.</p>
         <output class="finder-result" id="finderResult" hidden aria-live="polite"></output>
         <button class="button button-outline button-wide" id="downloadSelection" type="button" hidden>Скачать параметры подбора <span>↓</span></button>
       </form>
