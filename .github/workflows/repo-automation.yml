@@ -1,0 +1,72 @@
+name: Repo automation
+# Единая автоматизация репозитория (ставится скриптом github-automation/sweep.mjs).
+# Каждые 15 минут сливает (squash) открытые PR, у которых все проверки зелёные:
+#  - Dependabot: только minor/patch (major оставляет на ревью);
+#  - PR владельца репозитория из этого же репо, не черновики.
+# Метка "hold" исключает PR. PR без единой проверки не сливаются.
+# После слияния повторно запускает workflow с push + workflow_dispatch (push от GITHUB_TOKEN их не запускает).
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+  actions: write
+
+concurrency:
+  group: repo-automation
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge green PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -uo pipefail
+          merged=0
+          for PR in $(gh pr list --repo "$REPO" --state open --json number --jq '.[].number'); do
+            INFO=$(gh pr view "$PR" --repo "$REPO" --json author,isDraft,isCrossRepository,labels,title,mergeable)
+            AUTHOR=$(echo "$INFO" | jq -r .author.login)
+            DRAFT=$(echo "$INFO" | jq -r .isDraft)
+            CROSS=$(echo "$INFO" | jq -r .isCrossRepository)
+            HOLD=$(echo "$INFO" | jq -r '[.labels[].name] | index("hold") != null')
+            TITLE=$(echo "$INFO" | jq -r .title)
+            MERGEABLE=$(echo "$INFO" | jq -r .mergeable)
+            [ "$DRAFT" = "true" ] || [ "$HOLD" = "true" ] || [ "$MERGEABLE" != "MERGEABLE" ] && { echo "#$PR: skip (draft/hold/not mergeable)"; continue; }
+            if [ "$AUTHOR" = "app/dependabot" ]; then
+              FROM=$(echo "$TITLE" | sed -nE 's/.* from v?([0-9]+)[^ ]* to v?([0-9]+).*/\1/p')
+              TO=$(echo "$TITLE" | sed -nE 's/.* from v?([0-9]+)[^ ]* to v?([0-9]+).*/\2/p')
+              if [ -z "$FROM" ] || [ "$FROM" != "$TO" ]; then echo "#$PR: major update, left for review"; continue; fi
+            elif [ "$AUTHOR" != "$OWNER" ] || [ "$CROSS" = "true" ]; then
+              echo "#$PR: not owner's PR, skip"; continue
+            fi
+            CHECKS=$(gh pr checks "$PR" --repo "$REPO" --json bucket --jq '[.[].bucket]' 2>/dev/null || echo '[]')
+            TOTAL=$(echo "$CHECKS" | jq length)
+            BAD=$(echo "$CHECKS" | jq '[.[] | select(. != "pass" and . != "skipping")] | length')
+            if [ "$TOTAL" -eq 0 ] || [ "$BAD" -ne 0 ]; then echo "#$PR: checks not green ($TOTAL total, $BAD not passed)"; continue; fi
+            if gh pr merge "$PR" --repo "$REPO" --squash --delete-branch; then echo "#$PR merged: $TITLE"; merged=1; fi
+          done
+          echo "MERGED=$merged" >> "$GITHUB_ENV"
+
+      - name: Re-run push workflows after merge
+        if: env.MERGED == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          for path in $(gh api "repos/$REPO/contents/.github/workflows" --jq '.[].path'); do
+            [ "$(basename "$path")" = "repo-automation.yml" ] && continue
+            body=$(gh api "repos/$REPO/contents/$path" --jq .content | base64 -d)
+            if echo "$body" | grep -q 'workflow_dispatch' && echo "$body" | grep -qE '^\s*push:'; then
+              gh workflow run "$(basename "$path")" --repo "$REPO" && echo "dispatched $path" || echo "could not dispatch $path"
+            fi
+          done
