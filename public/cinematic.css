@@ -404,3 +404,21 @@ body.motion-ready .is-visible{opacity:1;transform:none}
  .faq details p{padding:0 0 20px;font-size:13px;line-height:1.75}
 }
 @media(prefers-reduced-motion:reduce){.faq details,.faq details summary span{transition:none}.faq details:hover{transform:none}}
+
+
+/* Contact and footer refinement — transparent demo state, no fake contact details. */
+.contact-section .request-copy p{max-width:610px}
+.contact-section .request-note{align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+.footer-editorial{display:grid;grid-template-columns:minmax(180px,1fr) auto;column-gap:36px;row-gap:24px;align-items:center}
+.footer-editorial .brand{margin:0}
+.footer-nav{display:flex;align-items:center;justify-content:flex-end;gap:clamp(16px,2.5vw,34px);flex-wrap:wrap}
+.footer-nav a,.footer-meta a{color:#d0c3b1;text-decoration:none;transition:color .25s ease}
+.footer-nav a:hover,.footer-meta a:hover{color:#f0d3a8}
+.footer-meta{grid-column:1/-1;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--dt-line);font-size:12px;color:#918a80}
+.footer-meta a{margin-left:auto}
+@media(max-width:700px){
+ .footer-editorial{grid-template-columns:1fr;gap:20px;padding-block:28px}
+ .footer-nav{justify-content:flex-start;gap:12px 20px}
+ .footer-meta{grid-column:auto;align-items:flex-start;flex-direction:column;gap:9px}
+ .footer-meta a{margin-left:0}
+}
